@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=75.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reddit-httpx-mcp"
+version = "0.1.0"
+description = "Reddit MCP server using browser cookies and curl_cffi"
+requires-python = ">=3.12"
+dependencies = [
+    "fastmcp>=2.0.0",
+    "curl_cffi>=0.7.0",
+    "python-dotenv>=1.1.1",
+    "inquirer>=3.4.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "pytest-asyncio>=0.23", "ruff>=0.4"]
+
+[project.scripts]
+reddit-mcp = "reddit_mcp_server.cli_main:main"

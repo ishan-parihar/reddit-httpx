@@ -1,0 +1,9 @@
+TOOL_TIMEOUT_SECONDS = 45.0
+REDDIT_BASE_URL = "https://www.reddit.com"
+REDDIT_OAUTH_URL = "https://oauth.reddit.com"
+DEFAULT_USER_AGENT = "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36"
+DEFAULT_PROFILE_DIR = "~/.reddit-mcp"
+COOKIES_FILE = "cookies.json"
+MAX_RETRIES = 3
+RETRY_BACKOFF = 2.0
+RATE_LIMIT_SLEEP = 30.0
