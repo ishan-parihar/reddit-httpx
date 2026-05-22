@@ -277,3 +277,5 @@ MIT
 - [curl_cffi](https://github.com/yifeikong/curl_cffi) — Browser-grade TLS impersonation
 - [FastMCP](https://github.com/jlowin/fastmcp) — MCP server framework
 - [Model Context Protocol](https://modelcontextprotocol.io) — The protocol standard
+---
+Developed by [Ishan Parihar](https://github.com/ishan-parihar) — If you find this useful, [consider supporting](https://rzp.io/rzp/ishan-parihar)
