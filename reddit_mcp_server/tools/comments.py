@@ -5,7 +5,7 @@ from reddit_mcp_server.error_handler import handle_api_error
 
 def register_comment_tools(mcp: FastMCP) -> None:
     @mcp.tool()
-    async def reddit_comment(parent_id: str, text: str) -> dict:
+    async def comment(parent_id: str, text: str) -> dict:
         """Comment on a post. parent_id format: t3_xxxxx (post) or t1_xxxxx (comment for reply)."""
         try:
             client = await get_reddit_client()
@@ -14,7 +14,7 @@ def register_comment_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_reply(comment_id: str, text: str) -> dict:
+    async def reply(comment_id: str, text: str) -> dict:
         """Reply to a comment. comment_id format: t1_xxxxx."""
         try:
             client = await get_reddit_client()
@@ -23,7 +23,7 @@ def register_comment_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_edit_comment(thing_id: str, text: str) -> dict:
+    async def edit_comment(thing_id: str, text: str) -> dict:
         """Edit own comment. thing_id format: t1_xxxxx."""
         try:
             client = await get_reddit_client()
@@ -32,7 +32,7 @@ def register_comment_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_delete_comment(thing_id: str) -> dict:
+    async def delete_comment(thing_id: str) -> dict:
         """Delete own comment. thing_id format: t1_xxxxx."""
         try:
             client = await get_reddit_client()

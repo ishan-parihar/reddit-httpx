@@ -1,3 +1,4 @@
+from typing import Literal
 from fastmcp import FastMCP
 from reddit_mcp_server.dependencies import get_reddit_client
 from reddit_mcp_server.error_handler import handle_api_error
@@ -5,7 +6,7 @@ from reddit_mcp_server.error_handler import handle_api_error
 
 def register_user_tools(mcp: FastMCP) -> None:
     @mcp.tool()
-    async def reddit_get_user_profile(username: str) -> dict:
+    async def get_user_profile(username: str) -> dict:
         """Get a Reddit user's profile (karma, cake day, trophies)."""
         try:
             client = await get_reddit_client()
@@ -14,7 +15,11 @@ def register_user_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_get_user_posts(username: str, sort: str = "new", limit: int = 25) -> dict:
+    async def get_user_posts(
+        username: str,
+        sort: Literal["new", "top", "hot", "controversial"] = "new",
+        limit: int = 25,
+    ) -> dict:
         """Get a user's submitted posts."""
         try:
             client = await get_reddit_client()
@@ -23,7 +28,11 @@ def register_user_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_get_user_comments(username: str, sort: str = "new", limit: int = 25) -> dict:
+    async def get_user_comments(
+        username: str,
+        sort: Literal["new", "top", "hot", "controversial"] = "new",
+        limit: int = 25,
+    ) -> dict:
         """Get a user's comment history."""
         try:
             client = await get_reddit_client()
@@ -32,7 +41,7 @@ def register_user_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_get_my_profile() -> dict:
+    async def get_my_profile() -> dict:
         """Get the authenticated user's own profile and account details."""
         try:
             client = await get_reddit_client()

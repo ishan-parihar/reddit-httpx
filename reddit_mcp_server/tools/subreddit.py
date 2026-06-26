@@ -5,7 +5,7 @@ from reddit_mcp_server.error_handler import handle_api_error
 
 def register_subreddit_tools(mcp: FastMCP) -> None:
     @mcp.tool()
-    async def reddit_subscribe(subreddit: str) -> dict:
+    async def subscribe(subreddit: str) -> dict:
         """Subscribe to a subreddit."""
         try:
             client = await get_reddit_client()
@@ -14,7 +14,7 @@ def register_subreddit_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_unsubscribe(subreddit: str) -> dict:
+    async def unsubscribe(subreddit: str) -> dict:
         """Unsubscribe from a subreddit."""
         try:
             client = await get_reddit_client()
@@ -23,7 +23,7 @@ def register_subreddit_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_get_subreddit_info(subreddit: str) -> dict:
+    async def get_subreddit_info(subreddit: str) -> dict:
         """Get subreddit details (description, rules, subscribers, created date)."""
         try:
             client = await get_reddit_client()
@@ -32,7 +32,7 @@ def register_subreddit_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_get_my_subreddits(limit: int = 100) -> dict:
+    async def get_my_subreddits(limit: int = 100) -> dict:
         """List the authenticated user's subscribed subreddits."""
         try:
             client = await get_reddit_client()

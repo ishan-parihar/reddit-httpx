@@ -5,7 +5,7 @@ from reddit_mcp_server.error_handler import handle_api_error
 
 def register_account_tools(mcp: FastMCP) -> None:
     @mcp.tool()
-    async def reddit_get_account_info() -> dict:
+    async def get_account_info() -> dict:
         """Get the authenticated user's account details (karma, email, preferences)."""
         try:
             client = await get_reddit_client()
@@ -14,7 +14,7 @@ def register_account_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_get_friends() -> dict:
+    async def get_friends() -> dict:
         """List the authenticated user's friends."""
         try:
             client = await get_reddit_client()
@@ -23,7 +23,7 @@ def register_account_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_add_friend(username: str) -> dict:
+    async def add_friend(username: str) -> dict:
         """Add a user as friend."""
         try:
             client = await get_reddit_client()
@@ -32,7 +32,7 @@ def register_account_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def reddit_remove_friend(username: str) -> dict:
+    async def remove_friend(username: str) -> dict:
         """Remove a user from friends list."""
         try:
             client = await get_reddit_client()
