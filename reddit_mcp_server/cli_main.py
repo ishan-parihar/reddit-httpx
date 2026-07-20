@@ -1,6 +1,15 @@
+import json
 import sys
 import argparse
-from reddit_mcp_server.logging_config import logger
+
+
+def axi_error(msg: str, hint: str = None) -> None:
+    """Print structured error to stdout (AXI §6) and exit with code 2."""
+    out = {"error": msg}
+    if hint:
+        out["help"] = hint
+    print(json.dumps(out))
+    sys.exit(2)
 
 
 def main():
@@ -18,23 +27,21 @@ def main():
         cookies = import_cookies_interactive()
         if cookies:
             save_cookies(cookies)
-            logger.info("Login successful. Cookies saved.")
+            print(json.dumps({"status": "success", "message": "Cookies saved."}))
         else:
-            logger.error("Login failed. No cookies extracted.")
-            sys.exit(1)
+            axi_error("Login failed. No cookies extracted.", "Ensure you are logged into Reddit in your browser.")
         return
 
     if args.logout:
         from reddit_mcp_server.session_state import clear_cookies
         clear_cookies()
-        logger.info("Logged out. Cookies cleared.")
+        print(json.dumps({"status": "success", "message": "Logged out. Cookies cleared."}))
         return
 
     if args.status:
         from reddit_mcp_server.authentication import get_auth_status
         status = get_auth_status()
-        for k, v in status.items():
-            print(f"  {k}: {v}")
+        print(json.dumps({"status": "ok", "auth": status}))
         return
 
     # Start MCP server
