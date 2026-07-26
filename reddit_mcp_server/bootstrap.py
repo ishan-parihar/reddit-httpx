@@ -20,7 +20,7 @@ def initialize_bootstrap() -> bool:
 def ensure_ready_or_raise() -> dict[str, str]:
     cookies = load_cookies()
     if not cookies:
-        raise RuntimeError("Not authenticated. Run `reddit-httpx --login` or set REDDIT_COOKIES env var.")
+        raise RuntimeError("Not authenticated. Run `reddit-httpx --login`, `reddit-httpx --cookies-file <path>`, or set REDDIT_COOKIES env var.")
     if not validate_session():
         raise RuntimeError("Session invalid. Run `reddit-httpx --login` to re-authenticate.")
     return cookies

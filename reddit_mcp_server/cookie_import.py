@@ -1,3 +1,4 @@
+import json
 import os
 import sys
 import sqlite3
@@ -205,3 +206,24 @@ def import_cookies_interactive() -> dict[str, str]:
     else:
         logger.info(f"Extracted {len(cookies)} cookies from {browser}")
     return cookies
+
+
+def import_cookies_from_file(path: str) -> dict[str, str]:
+    """Import cookies from a JSON file. Supports both flat {name: value} and
+    {"cookies": {name: value}} formats."""
+    from pathlib import Path
+    p = Path(path)
+    if not p.exists():
+        logger.error(f"File not found: {path}")
+        return {}
+    try:
+        data = json.loads(p.read_text())
+        cookies = data.get("cookies", data) if isinstance(data, dict) else {}
+        if isinstance(cookies, dict) and cookies:
+            logger.info(f"Imported {len(cookies)} cookies from {p.name}")
+            return cookies
+        logger.error(f"No valid cookies in {path}")
+        return {}
+    except json.JSONDecodeError:
+        logger.error(f"Invalid JSON in {path}")
+        return {}

@@ -115,7 +115,7 @@ def show_home_view() -> None:
         print(f"  username: {username}")
     else:
         print(f"  status: not_authenticated")
-        print(f"  help: Run `reddit-httpx --login` to import browser cookies")
+        print(f"  help: Run `reddit-httpx --login` or `reddit-httpx --cookies-file <path>`")
     print()
 
     # Tool listing in TOON format (AXI §2: minimal schema)
@@ -125,10 +125,11 @@ def show_home_view() -> None:
     print()
 
     # AXI §9: Contextual disclosure
-    print("help[4]:")
+    print("help[5]:")
     print("  Run `reddit-httpx --tool-info <name>` for detailed parameters")
     print("  Run `reddit-httpx --list-tools` to see all tools")
     print("  Run `reddit-httpx --login` to import browser cookies")
+    print("  Run `reddit-httpx --cookies-file <path>` to import cookies from JSON")
     print("  Run `reddit-httpx` to start the MCP server")
 
 
@@ -176,19 +177,26 @@ def show_help() -> None:
     print("  reddit-httpx --list-tools       List all available MCP tools")
     print("  reddit-httpx --tool-info <name> Show details for a specific tool")
     print("  reddit-httpx --login            Import cookies from browser")
+    print("  reddit-httpx --cookies-file F   Import cookies from a JSON file")
     print("  reddit-httpx --logout           Clear stored session")
     print("  reddit-httpx --status           Check authentication status")
     print("  reddit-httpx --help             Show this help message")
+    print()
+    print("Environment:")
+    print("  REDDIT_COOKIES     JSON string of cookies (loaded at server startup)")
+    print("  REDDIT_MCP_LOG_LEVEL  Log level: DEBUG, INFO, WARNING, ERROR")
     print()
     print("Examples:")
     print("  reddit-httpx --tool-info search_posts")
     print("  reddit-httpx --list-tools")
     print("  reddit-httpx --login")
+    print("  reddit-httpx --cookies-file ~/reddit-cookies.json")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Reddit MCP Server", add_help=False)
     parser.add_argument("--login", action="store_true", help="Import cookies from browser")
+    parser.add_argument("--cookies-file", type=str, metavar="PATH", help="Import cookies from a JSON file")
     parser.add_argument("--logout", action="store_true", help="Clear stored session")
     parser.add_argument("--status", action="store_true", help="Check authentication status")
     parser.add_argument("--list-tools", action="store_true", help="List all available MCP tools")
@@ -223,6 +231,23 @@ def main():
             axi_error("Login failed. No cookies extracted.", "Ensure you are logged into Reddit in your browser.")
         return
 
+    if args.cookies_file:
+        from reddit_mcp_server.session_state import save_cookies
+        from pathlib import Path
+        path = Path(args.cookies_file)
+        if not path.exists():
+            axi_error(f"File not found: {args.cookies_file}", "Check the path and try again.")
+        try:
+            data = json.loads(path.read_text())
+            cookies = data.get("cookies", data) if isinstance(data, dict) else data
+            if not isinstance(cookies, dict) or not cookies:
+                axi_error("Invalid cookies file.", "Expected JSON object with cookie names as keys.")
+            save_cookies(cookies)
+            print(json.dumps({"status": "success", "message": f"Imported {len(cookies)} cookies from {path.name}."}))
+        except json.JSONDecodeError:
+            axi_error("Invalid JSON in cookies file.", "File must contain valid JSON.")
+        return
+
     if args.logout:
         from reddit_mcp_server.session_state import clear_cookies
         clear_cookies()
@@ -230,7 +255,9 @@ def main():
         return
 
     if args.status:
+        from reddit_mcp_server.bootstrap import initialize_bootstrap
         from reddit_mcp_server.authentication import get_auth_status
+        initialize_bootstrap()  # loads REDDIT_COOKIES env var if present
         status = get_auth_status()
         print(json.dumps({"status": "ok", "auth": status}))
         return

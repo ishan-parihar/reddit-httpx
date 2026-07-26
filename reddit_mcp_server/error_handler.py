@@ -10,5 +10,8 @@ def handle_api_error(e: Exception) -> None:
         raise_tool_error("Session expired. Run `reddit-httpx --login` to re-authenticate.", e)
     elif isinstance(e, RateLimitError):
         raise_tool_error(f"Rate limited by Reddit. Wait {e.retry_after}s.", e)
+    elif isinstance(e, RuntimeError):
+        # From bootstrap.ensure_ready_or_raise() — setup issue, not API error
+        raise_tool_error(str(e), e)
     else:
         raise_tool_error(f"Reddit API error: {e}", e)
