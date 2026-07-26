@@ -203,7 +203,7 @@ reddit-httpx/
 │   ├── scraping/
 │   │   └── api_client.py        # RedditAPIClient (curl_cffi, retry, rate-limit, errors)
 │   ├── cookie_import.py         # Browser cookie extraction + AES decryption
-│   ├── session_state.py         # Cookie persistence (~/.reddit-mcp/)
+│   ├── session_state.py         # Cookie persistence (~/.reddit-httpx/)
 │   ├── authentication.py        # Session validation
 │   ├── bootstrap.py             # Startup initialization
 │   ├── dependencies.py          # Lazy client singleton
@@ -305,7 +305,7 @@ reddit-httpx --login
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `REDDIT_COOKIES` | JSON dict of cookies (alternative to `--login`) | — |
-| `REDDIT_MCP_PROFILE_DIR` | Config directory | `~/.reddit-mcp` |
+| `REDDIT_MCP_PROFILE_DIR` | Config directory | `~/.reddit-httpx` |
 | `REDDIT_MCP_LOG_LEVEL` | Logging level | `INFO` |
 
 ## Development

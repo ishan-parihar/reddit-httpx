@@ -1,14 +1,26 @@
 import os
 import json
+import shutil
 from pathlib import Path
 from reddit_mcp_server.constants import DEFAULT_PROFILE_DIR, COOKIES_FILE
+
+OLD_PROFILE_DIR = "~/.reddit-mcp"
 
 def get_profile_dir() -> Path:
     d = Path(os.environ.get("REDDIT_MCP_PROFILE_DIR", DEFAULT_PROFILE_DIR)).expanduser()
     d.mkdir(parents=True, exist_ok=True)
     return d
 
+def _migrate_if_needed() -> None:
+    """One-time migration: copy cookies from ~/.reddit-mcp/ to ~/.reddit-httpx/ if needed."""
+    old = Path(OLD_PROFILE_DIR).expanduser() / COOKIES_FILE
+    new = get_profile_dir() / COOKIES_FILE
+    if old.exists() and not new.exists():
+        new.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(old, new)
+
 def get_cookies_path() -> Path:
+    _migrate_if_needed()
     return get_profile_dir() / COOKIES_FILE
 
 def load_cookies() -> dict[str, str]:
