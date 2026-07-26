@@ -98,10 +98,21 @@ Reddit's official API is heavily rate-limited (60 req/min), requires OAuth app r
 ### Install
 
 ```bash
+curl -sSL https://raw.githubusercontent.com/ishan-parihar/reddit-httpx/main/install.sh | bash
+```
+
+This installs `reddit-httpx` globally via pipx or pip. Requires Python 3.12+.
+
+<details>
+<summary>Manual install</summary>
+
+```bash
 git clone https://github.com/ishan-parihar/reddit-httpx.git
 cd reddit-httpx
 pip install -e .
 ```
+
+</details>
 
 ### Authenticate
 
