@@ -89,7 +89,7 @@ Reddit's official API is heavily rate-limited (60 req/min), requires OAuth app r
 | **Subreddit** | 4 | `subscribe`, `unsubscribe`, `get_subreddit_info`, `get_my_subscriptions` |
 | **Save** | 5 | `save`, `unsave`, `hide`, `unhide`, `get_saved` |
 | **Account** | 4 | `get_account_info`, `add_friend`, `remove_friend`, `get_friends` |
-| **Moderation** | 6 | `remove`, `approve`, `distinguish`, `undistinguish`, `sticky`, `unsticky`, `lock`, `unlock` |
+| **Moderation** | 6 | `mod_remove`, `mod_approve`, `mod_distinguish`, `mod_sticky`, `mod_lock`, `mod_unlock` |
 | **Engagement** | 9 | `report`, `block_user`, `follow_post`, `sendreplies`, `read_all_messages`, `marknsfw`, `unmarknsfw`, `spoiler`, `unspoiler` |
 | **Info** | 4 | `get_karma`, `get_user_overview`, `get_subreddit_rules`, `get_subreddit_moderators` |
 
