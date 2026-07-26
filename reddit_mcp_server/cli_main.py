@@ -66,6 +66,25 @@ TOOLS = _discover_tools()
 
 # ── AXI §8: Content-first home view ───────────────────────────────────────
 
+def _get_username() -> str:
+    """Fetch username from Reddit's /api/me.json endpoint."""
+    try:
+        from reddit_mcp_server.session_state import load_cookies
+        from reddit_mcp_server.scraping.api_client import RedditAPIClient
+        cookies = load_cookies()
+        if not cookies:
+            return "unknown"
+        import asyncio
+        client = RedditAPIClient(cookies)
+        try:
+            data = asyncio.run(client.me())
+            return data.get("data", {}).get("name", "unknown")
+        finally:
+            asyncio.run(client.close())
+    except Exception:
+        return "unknown"
+
+
 def show_home_view() -> None:
     """Show live state when no args provided (AXI §8)."""
     bin_path = _get_bin_path()
@@ -91,7 +110,7 @@ def show_home_view() -> None:
     # Live session state
     print("session:")
     if has_cookies and auth_status.get("authenticated", False):
-        username = auth_status.get("username", "unknown")
+        username = _get_username()
         print(f"  status: authenticated")
         print(f"  username: {username}")
     else:
@@ -216,11 +235,6 @@ def main():
         print(json.dumps({"status": "ok", "auth": status}))
         return
 
-    # AXI §8: No-args shows content-first home view
-    if len(sys.argv) == 1:
-        show_home_view()
-        return
-
     # Start MCP server
     from reddit_mcp_server.bootstrap import initialize_bootstrap
     from reddit_mcp_server.server import create_mcp_server
@@ -228,7 +242,14 @@ def main():
     initialize_bootstrap()
     mcp = create_mcp_server()
 
-    if args.transport == "stdio":
+    if len(sys.argv) == 1:
+        if sys.stdin.isatty():
+            # Interactive terminal: show home view (CLI mode)
+            show_home_view()
+            return
+        # Pipe from MCP client (e.g. Claude Desktop): start server
+        mcp.run(transport="stdio")
+    elif args.transport == "stdio":
         mcp.run(transport="stdio")
     else:
         mcp.run(transport="streamable-http", host="0.0.0.0", port=args.port)
