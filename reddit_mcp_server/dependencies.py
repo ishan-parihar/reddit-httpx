@@ -10,8 +10,19 @@ async def get_reddit_client():
         from reddit_mcp_server.scraping.api_client import RedditAPIClient
         _client = RedditAPIClient(cookies)
         logger.info("Reddit API client initialized")
+        # Validate session on first init
+        health = await _client.check_session()
+        if not health.get("valid"):
+            logger.warning(f"Session health check failed: {health.get('reason', 'unknown')}")
     return _client
 
 def reset_client():
     global _client
+    if _client is not None:
+        import asyncio
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(_client.close())
+        except RuntimeError:
+            pass  # no event loop running (e.g. during tests)
     _client = None

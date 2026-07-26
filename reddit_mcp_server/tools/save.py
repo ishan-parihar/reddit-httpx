@@ -1,6 +1,7 @@
 from fastmcp import FastMCP
 from reddit_mcp_server.dependencies import get_reddit_client
 from reddit_mcp_server.error_handler import handle_api_error
+from reddit_mcp_server.normalizer import normalize_listing
 
 
 def register_save_tools(mcp: FastMCP) -> None:
@@ -9,7 +10,8 @@ def register_save_tools(mcp: FastMCP) -> None:
         """Save a post or comment. thing_id format: t3_xxxxx or t1_xxxxx."""
         try:
             client = await get_reddit_client()
-            return await client.save(thing_id)
+            await client.save(thing_id)
+            return {"ok": True, "action": "saved", "id": thing_id}
         except Exception as e:
             handle_api_error(e)
 
@@ -18,16 +20,17 @@ def register_save_tools(mcp: FastMCP) -> None:
         """Unsave a post or comment."""
         try:
             client = await get_reddit_client()
-            return await client.unsave(thing_id)
+            await client.unsave(thing_id)
+            return {"ok": True, "action": "unsaved", "id": thing_id}
         except Exception as e:
             handle_api_error(e)
 
     @mcp.tool()
-    async def get_saved(username: str, limit: int = 25) -> dict:
-        """Get a user's saved posts and comments."""
+    async def get_saved(limit: int = 25) -> dict:
+        """Get the authenticated user's saved posts and comments."""
         try:
             client = await get_reddit_client()
-            return await client.get_saved(username, limit)
+            return await client.get_saved(limit)
         except Exception as e:
             handle_api_error(e)
 
@@ -36,7 +39,8 @@ def register_save_tools(mcp: FastMCP) -> None:
         """Hide a post from your feed."""
         try:
             client = await get_reddit_client()
-            return await client.hide(thing_id)
+            await client.hide(thing_id)
+            return {"ok": True, "action": "hidden", "id": thing_id}
         except Exception as e:
             handle_api_error(e)
 
@@ -45,6 +49,7 @@ def register_save_tools(mcp: FastMCP) -> None:
         """Unhide a previously hidden post."""
         try:
             client = await get_reddit_client()
-            return await client.unhide(thing_id)
+            await client.unhide(thing_id)
+            return {"ok": True, "action": "unhidden", "id": thing_id}
         except Exception as e:
             handle_api_error(e)

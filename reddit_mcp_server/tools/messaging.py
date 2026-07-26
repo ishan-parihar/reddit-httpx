@@ -22,7 +22,8 @@ def register_messaging_tools(mcp: FastMCP) -> None:
         """Send a private message to a user."""
         try:
             client = await get_reddit_client()
-            return await client.send_message(to, subject, body)
+            await client.send_message(to, subject, body)
+            return {"ok": True, "action": "sent", "to": to, "subject": subject}
         except Exception as e:
             handle_api_error(e)
 
@@ -31,6 +32,7 @@ def register_messaging_tools(mcp: FastMCP) -> None:
         """Mark a message as read. thing_id format: t4_xxxxx."""
         try:
             client = await get_reddit_client()
-            return await client.read_message(thing_id)
+            await client.read_message(thing_id)
+            return {"ok": True, "action": "marked_read", "id": thing_id}
         except Exception as e:
             handle_api_error(e)

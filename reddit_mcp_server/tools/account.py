@@ -27,7 +27,8 @@ def register_account_tools(mcp: FastMCP) -> None:
         """Add a user as friend."""
         try:
             client = await get_reddit_client()
-            return await client.add_friend(username)
+            await client.add_friend(username)
+            return {"ok": True, "action": "friended", "user": username}
         except Exception as e:
             handle_api_error(e)
 
@@ -36,6 +37,7 @@ def register_account_tools(mcp: FastMCP) -> None:
         """Remove a user from friends list."""
         try:
             client = await get_reddit_client()
-            return await client.remove_friend(username)
+            await client.remove_friend(username)
+            return {"ok": True, "action": "unfriended", "user": username}
         except Exception as e:
             handle_api_error(e)

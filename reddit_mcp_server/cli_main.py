@@ -1,7 +1,9 @@
 import json
+import os
 import sys
 import argparse
 
+# ── TOON-like output helpers (AXI §1) ──────────────────────────────────────
 
 def axi_error(msg: str, hint: str = None) -> None:
     """Print structured error to stdout (AXI §6) and exit with code 2."""
@@ -12,8 +14,161 @@ def axi_error(msg: str, hint: str = None) -> None:
     sys.exit(2)
 
 
+def _truncate(s: str, max_chars: int = 60) -> str:
+    """Truncate string with ellipsis (AXI §3)."""
+    if len(s) <= max_chars:
+        return s
+    return f"{s[:max_chars]}...\n  ... (truncated, {len(s)} chars total)"
+
+
+def _get_bin_path() -> str:
+    """Get executable path with home dir collapsed to ~ (AXI §10)."""
+    try:
+        # Use sys.argv[0] which is the actual CLI entry point
+        exe = sys.argv[0] if sys.argv else "reddit-httpx"
+        home = os.environ.get("HOME", "")
+        if home and exe.startswith(home):
+            return exe.replace(home, "~", 1)
+        return exe
+    except Exception:
+        return "reddit-httpx"
+
+
+# ── Tool registry (auto-discovered from MCP server) ────────────────────────
+
+def _discover_tools() -> list[tuple[str, str]]:
+    """Dynamically list all registered MCP tools with their docstrings."""
+    try:
+        import asyncio
+        from reddit_mcp_server.server import create_mcp_server
+        mcp = create_mcp_server()
+        tools_obj = asyncio.run(mcp.list_tools())
+        return sorted([(t.name, (t.description or "").split("\n")[0].strip()) for t in tools_obj], key=lambda x: x[0])
+    except Exception:
+        # Fallback: static list if discovery fails
+        return [
+            ("browse_subreddit", "Browse posts from a subreddit"),
+            ("browse_frontpage", "Browse the personalized frontpage"),
+            ("browse_popular", "Browse r/popular"),
+            ("search_posts", "Search Reddit posts"),
+            ("search_subreddits", "Search for subreddits"),
+            ("search_users", "Search for Reddit users"),
+            ("get_post", "Get a post's details and comment tree"),
+            ("get_comments", "Get comments for a post"),
+            ("get_user_profile", "Get a Reddit user's profile"),
+            ("get_user_posts", "Get a user's recent posts"),
+            ("get_user_comments", "Get a user's recent comments"),
+            ("get_my_profile", "Get the authenticated user's profile"),
+        ]
+
+TOOLS = _discover_tools()
+
+
+# ── AXI §8: Content-first home view ───────────────────────────────────────
+
+def show_home_view() -> None:
+    """Show live state when no args provided (AXI §8)."""
+    bin_path = _get_bin_path()
+
+    # Check session state
+    has_cookies = False
+    auth_status = {"authenticated": False}
+    try:
+        from reddit_mcp_server.session_state import load_cookies
+        from reddit_mcp_server.authentication import get_auth_status
+        has_cookies = load_cookies() is not None
+        if has_cookies:
+            auth_status = get_auth_status()
+    except Exception as e:
+        # Log warning but don't fail — session check is best-effort
+        print(json.dumps({"warning": f"Session check failed: {e}"}), file=sys.stderr)
+
+    # AXI §10: Tool identity header
+    print(f"bin: {bin_path}")
+    print(f"description: Reddit MCP server — browsing, posting, commenting, voting, and moderation")
+    print()
+
+    # Live session state
+    print("session:")
+    if has_cookies and auth_status.get("authenticated", False):
+        username = auth_status.get("username", "unknown")
+        print(f"  status: authenticated")
+        print(f"  username: {username}")
+    else:
+        print(f"  status: not_authenticated")
+        print(f"  help: Run `reddit-httpx --login` to import browser cookies")
+    print()
+
+    # Tool listing in TOON format (AXI §2: minimal schema)
+    print(f"tools[{len(TOOLS)}]{{name,description}}:")
+    for name, desc in TOOLS:
+        print(f"  {name},{_truncate(desc)}")
+    print()
+
+    # AXI §9: Contextual disclosure
+    print("help[4]:")
+    print("  Run `reddit-httpx --tool-info <name>` for detailed parameters")
+    print("  Run `reddit-httpx --list-tools` to see all tools")
+    print("  Run `reddit-httpx --login` to import browser cookies")
+    print("  Run `reddit-httpx` to start the MCP server")
+
+
+def list_tools_and_exit() -> None:
+    """List all available MCP tools and exit (AXI §8 content-first)."""
+    print(f"tools[{len(TOOLS)}]{{name,description}}:")
+    for name, desc in TOOLS:
+        print(f"  {name},{desc}")
+    print()
+    print("help[2]:")
+    print("  Run `reddit-httpx --tool-info <name>` for details")
+    print("  Run `reddit-httpx` to start the MCP server")
+    sys.exit(0)
+
+
+def tool_info_and_exit(tool_name: str) -> None:
+    """Show detailed info for a specific tool."""
+    try:
+        import asyncio
+        from reddit_mcp_server.server import create_mcp_server
+        mcp = create_mcp_server()
+        tools_obj = asyncio.run(mcp.list_tools())
+        tool = next((t for t in tools_obj if t.name == tool_name), None)
+        if tool:
+            info = {"name": tool.name, "description": tool.description or ""}
+            # Extract parameter info from schema if available
+            if hasattr(tool, "parameters") and tool.parameters:
+                info["parameters"] = tool.parameters
+            print(json.dumps(info, indent=2, default=str))
+        else:
+            valid = sorted([t.name for t in tools_obj])
+            axi_error(f"Unknown tool: '{tool_name}'", f"Valid tools: {', '.join(valid)}")
+    except Exception as e:
+        axi_error(f"Failed to load tool info: {e}")
+    sys.exit(0)
+
+
+def show_help() -> None:
+    """Show usage information (AXI §10)."""
+    print("reddit-httpx v0.1.0")
+    print("Reddit MCP server — browsing, posting, commenting, voting, and moderation")
+    print()
+    print("Usage:")
+    print("  reddit-httpx                    Show home view with live state")
+    print("  reddit-httpx --list-tools       List all available MCP tools")
+    print("  reddit-httpx --tool-info <name> Show details for a specific tool")
+    print("  reddit-httpx --login            Import cookies from browser")
+    print("  reddit-httpx --logout           Clear stored session")
+    print("  reddit-httpx --status           Check authentication status")
+    print("  reddit-httpx --help             Show this help message")
+    print()
+    print("Examples:")
+    print("  reddit-httpx --tool-info search_posts")
+    print("  reddit-httpx --list-tools")
+    print("  reddit-httpx --login")
+
+
 def main():
-    parser = argparse.ArgumentParser(description="Reddit MCP Server")
+    parser = argparse.ArgumentParser(description="Reddit MCP Server", add_help=False)
     parser.add_argument("--login", action="store_true", help="Import cookies from browser")
     parser.add_argument("--logout", action="store_true", help="Clear stored session")
     parser.add_argument("--status", action="store_true", help="Check authentication status")
@@ -21,7 +176,22 @@ def main():
     parser.add_argument("--tool-info", type=str, metavar="TOOL", help="Show details for a specific tool")
     parser.add_argument("--transport", choices=["stdio", "streamable-http"], default="stdio", help="MCP transport")
     parser.add_argument("--port", type=int, default=8000, help="Port for HTTP transport")
-    args = parser.parse_args()
+    parser.add_argument("--help", "-h", action="store_true", help="Show help message")
+    args, unknown = parser.parse_known_args()
+
+    # AXI §6: Fail loud on unrecognized input
+    if unknown:
+        axi_error(f"Unknown flag: '{unknown[0]}'", "Run `reddit-httpx --help` for usage")
+
+    if args.help:
+        show_help()
+        return
+
+    if args.list_tools:
+        list_tools_and_exit()
+
+    if args.tool_info:
+        tool_info_and_exit(args.tool_info)
 
     if args.login:
         from reddit_mcp_server.cookie_import import import_cookies_interactive
@@ -46,11 +216,10 @@ def main():
         print(json.dumps({"status": "ok", "auth": status}))
         return
 
-    if args.list_tools:
-        list_tools_and_exit()
-
-    if args.tool_info:
-        tool_info_and_exit(args.tool_info)
+    # AXI §8: No-args shows content-first home view
+    if len(sys.argv) == 1:
+        show_home_view()
+        return
 
     # Start MCP server
     from reddit_mcp_server.bootstrap import initialize_bootstrap
@@ -67,57 +236,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-def list_tools_and_exit() -> None:
-    """List all available MCP tools and exit (AXI §8 content-first)."""
-    tools = [
-        ("reddit_search", "Search Reddit posts and comments"),
-        ("reddit_get_post", "Get a specific Reddit post by ID or URL"),
-        ("reddit_get_comments", "Get comments on a Reddit post"),
-        ("reddit_get_subreddit", "Get subreddit information"),
-        ("reddit_get_user", "Get Reddit user profile information"),
-        ("reddit_get_user_posts", "Get a user's recent posts"),
-        ("reddit_get_user_comments", "Get a user's recent comments"),
-        ("reddit_get_trending", "Get trending posts from a subreddit"),
-        ("reddit_get_wiki", "Get subreddit wiki page content"),
-        ("reddit_get_rules", "Get subreddit rules"),
-        ("reddit_get_flairs", "Get available post flairs for a subreddit"),
-        ("reddit_get_mod_log", "Get moderator action log"),
-        ("reddit_get_post_awards", "Get awards on a post"),
-        ("reddit_get_related_posts", "Get related/similar posts"),
-        ("reddit_get_subreddit_about", "Get detailed subreddit metadata"),
-        ("reddit_search_comments", "Search within comments of a subreddit"),
-    ]
-    print(f"tools[{len(tools)}]{{name,description}}:")
-    for name, desc in tools:
-        print(f"  {name},{desc}")
-    print()
-    print("help[2]:")
-    print("  Run `reddit-httpx --tool-info <name>` for details")
-    print("  Run `reddit-httpx` to start the MCP server")
-    sys.exit(0)
-
-
-def tool_info_and_exit(tool_name: str) -> None:
-    """Show detailed info for a specific tool (AXI §9 contextual disclosure)."""
-    tools_info = {
-        "reddit_search": {
-            "name": "reddit_search",
-            "description": "Search Reddit posts and comments",
-            "parameters": {"query": "string (required)", "subreddit": "string (optional)", "sort": "relevance|hot|top|new|comments (default relevance)", "time": "hour|day|week|month|year|all (default all)", "limit": "number (default 25)"},
-            "returns": "Array of post objects with title, score, author, comments",
-        },
-        "reddit_get_post": {
-            "name": "reddit_get_post",
-            "description": "Get a specific Reddit post by ID or full URL",
-            "parameters": {"url_or_id": "string (required)"},
-            "returns": "Post object with selftext, score, comments count",
-        },
-    }
-    if tool_name in tools_info:
-        print(json.dumps(tools_info[tool_name], indent=2))
-    else:
-        valid = list(tools_info.keys())
-        axi_error(f"Unknown tool: '{tool_name}'", f"Valid tools: {', '.join(valid)}")
-    sys.exit(0)

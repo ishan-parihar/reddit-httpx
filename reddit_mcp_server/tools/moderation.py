@@ -10,7 +10,8 @@ def register_moderation_tools(mcp: FastMCP) -> None:
         """Remove a post or comment as moderator. thing_id: t3_xxx or t1_xxx."""
         try:
             client = await get_reddit_client()
-            return await client.mod_remove(thing_id, spam)
+            await client.mod_remove(thing_id, spam)
+            return {"ok": True, "action": "removed_spam" if spam else "removed", "id": thing_id}
         except Exception as e:
             handle_api_error(e)
 
@@ -19,7 +20,8 @@ def register_moderation_tools(mcp: FastMCP) -> None:
         """Approve a post or comment as moderator."""
         try:
             client = await get_reddit_client()
-            return await client.mod_approve(thing_id)
+            await client.mod_approve(thing_id)
+            return {"ok": True, "action": "approved", "id": thing_id}
         except Exception as e:
             handle_api_error(e)
 
@@ -31,7 +33,8 @@ def register_moderation_tools(mcp: FastMCP) -> None:
         """Distinguish a comment as moderator."""
         try:
             client = await get_reddit_client()
-            return await client.mod_distinguish(thing_id, how)
+            await client.mod_distinguish(thing_id, how)
+            return {"ok": True, "action": f"distinguished_{how}", "id": thing_id}
         except Exception as e:
             handle_api_error(e)
 
@@ -40,7 +43,8 @@ def register_moderation_tools(mcp: FastMCP) -> None:
         """Sticky or unsticky a post."""
         try:
             client = await get_reddit_client()
-            return await client.mod_sticky(thing_id, state)
+            await client.mod_sticky(thing_id, state)
+            return {"ok": True, "action": "stickied" if state else "unstickied", "id": thing_id}
         except Exception as e:
             handle_api_error(e)
 
@@ -49,7 +53,8 @@ def register_moderation_tools(mcp: FastMCP) -> None:
         """Lock a post (prevent new comments)."""
         try:
             client = await get_reddit_client()
-            return await client.mod_lock(thing_id)
+            await client.mod_lock(thing_id)
+            return {"ok": True, "action": "locked", "id": thing_id}
         except Exception as e:
             handle_api_error(e)
 
@@ -58,6 +63,7 @@ def register_moderation_tools(mcp: FastMCP) -> None:
         """Unlock a previously locked post."""
         try:
             client = await get_reddit_client()
-            return await client.mod_unlock(thing_id)
+            await client.mod_unlock(thing_id)
+            return {"ok": True, "action": "unlocked", "id": thing_id}
         except Exception as e:
             handle_api_error(e)

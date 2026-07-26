@@ -23,6 +23,10 @@ BROWSER_PATHS = {
         "linux": Path.home() / ".config/microsoft-edge/Default/Cookies",
         "darwin": Path.home() / "Library/Application Support/Microsoft Edge/Default/Cookies",
     },
+    "zen": {
+        "linux": Path.home() / ".zen",
+        "darwin": Path.home() / "Library/Application Support/Zen",
+    },
 }
 
 def _get_platform() -> str:
@@ -37,6 +41,21 @@ def _find_firefox_cookies() -> Path | None:
         cookies_file = profile_dir / "cookies.sqlite"
         if cookies_file.exists():
             return cookies_file
+    return None
+
+
+def _find_zen_cookies() -> Path | None:
+    """Find cookies.sqlite in Zen browser profiles."""
+    platform = _get_platform()
+    base = BROWSER_PATHS["zen"].get(platform)
+    if not base or not base.exists():
+        return None
+    # Zen stores profiles as hash-prefixed dirs with cookies.sqlite inside
+    for profile_dir in base.iterdir():
+        if profile_dir.is_dir():
+            cookies_file = profile_dir / "cookies.sqlite"
+            if cookies_file.exists():
+                return cookies_file
     return None
 
 def _get_chromium_key(browser: str) -> bytes | None:
@@ -105,6 +124,10 @@ def _extract_chromium_cookies(db_path: Path, browser: str = "chrome") -> dict[st
     return cookies
 
 def _extract_firefox_cookies(db_path: Path) -> dict[str, str]:
+    """Extract cookies from Firefox or Zen browser (both use moz_cookies table).
+    
+    Firefox uses `baseDomain`, Zen uses `host`. We try both columns.
+    """
     if not db_path.exists():
         return {}
     tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".db")
@@ -113,8 +136,13 @@ def _extract_firefox_cookies(db_path: Path) -> dict[str, str]:
     cookies = {}
     try:
         conn = sqlite3.connect(tmp.name)
+        # Detect which column exists: `host` (Zen) or `baseDomain` (Firefox)
+        cursor = conn.execute("PRAGMA table_info(moz_cookies)")
+        columns = {row[1] for row in cursor.fetchall()}
+        domain_col = "host" if "host" in columns else "baseDomain"
+        
         cursor = conn.execute(
-            "SELECT name, value FROM moz_cookies WHERE baseDomain LIKE '%reddit.com' AND value != ''"
+            f"SELECT name, value FROM moz_cookies WHERE {domain_col} LIKE '%reddit.com' AND value != ''"
         )
         for name, value in cursor.fetchall():
             cookies[name] = value
@@ -130,6 +158,11 @@ def extract_cookies_from_browser(browser: str) -> dict[str, str]:
         if not db_path:
             return {}
         return _extract_firefox_cookies(db_path)
+    if browser == "zen":
+        db_path = _find_zen_cookies()
+        if not db_path:
+            return {}
+        return _extract_firefox_cookies(db_path)
     db_path = BROWSER_PATHS.get(browser, {}).get(platform)
     if not db_path:
         return {}
@@ -141,6 +174,9 @@ def detect_available_browsers() -> list[str]:
     for browser, paths in BROWSER_PATHS.items():
         if browser == "firefox":
             if _find_firefox_cookies():
+                available.append(browser)
+        elif browser == "zen":
+            if _find_zen_cookies():
                 available.append(browser)
         else:
             path = paths.get(platform)

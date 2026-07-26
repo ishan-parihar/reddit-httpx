@@ -9,7 +9,8 @@ def register_subreddit_tools(mcp: FastMCP) -> None:
         """Subscribe to a subreddit."""
         try:
             client = await get_reddit_client()
-            return await client.subscribe(subreddit)
+            await client.subscribe(subreddit)
+            return {"ok": True, "action": "subscribed", "subreddit": subreddit}
         except Exception as e:
             handle_api_error(e)
 
@@ -18,7 +19,8 @@ def register_subreddit_tools(mcp: FastMCP) -> None:
         """Unsubscribe from a subreddit."""
         try:
             client = await get_reddit_client()
-            return await client.unsubscribe(subreddit)
+            await client.unsubscribe(subreddit)
+            return {"ok": True, "action": "unsubscribed", "subreddit": subreddit}
         except Exception as e:
             handle_api_error(e)
 

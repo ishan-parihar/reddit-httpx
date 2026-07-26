@@ -13,12 +13,14 @@ from reddit_mcp_server.tools import (
     register_save_tools,
     register_account_tools,
     register_moderation_tools,
+    register_engagement_tools,
+    register_info_tools,
 )
 
 
 def create_mcp_server() -> FastMCP:
     mcp = FastMCP(
-        "reddit-mcp",
+        "reddit-httpx",
         instructions="Reddit MCP server - full Reddit automation via browser cookies",
     )
 
@@ -35,6 +37,8 @@ def create_mcp_server() -> FastMCP:
     register_save_tools(mcp)
     register_account_tools(mcp)
     register_moderation_tools(mcp)
+    register_engagement_tools(mcp)
+    register_info_tools(mcp)
 
     logger.info("Reddit MCP server created with all tools registered")
     return mcp

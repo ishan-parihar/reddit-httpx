@@ -9,11 +9,12 @@ def register_vote_tools(mcp: FastMCP) -> None:
     async def vote(
         thing_id: str,
         direction: Literal["up", "down", "none"],
-    ) -> str:
+    ) -> dict:
         """Vote on a Reddit thing (post or comment). thing_id format: t3_xxxxx or t1_xxxxx."""
         direction_map = {"up": 1, "down": -1, "none": 0}
         try:
             client = await get_reddit_client()
-            return await client.vote(thing_id, direction_map[direction])
+            await client.vote(thing_id, direction_map[direction])
+            return {"ok": True, "action": f"voted_{direction}", "id": thing_id}
         except Exception as e:
             handle_api_error(e)

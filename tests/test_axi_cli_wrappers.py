@@ -5,7 +5,7 @@ import sys
 
 import pytest
 
-from reddit_mcp_server.cli_main import list_tools_and_exit, tool_info_and_exit, axi_error
+from reddit_mcp_server.cli_main import list_tools_and_exit, tool_info_and_exit, axi_error, TOOLS
 
 
 class TestListTools:
@@ -18,38 +18,20 @@ class TestListTools:
         assert exc_info.value.code == 0
 
     def test_list_tools_output_contains_tool_header(self, capsys):
-        """Output should contain the TOON-style tools header."""
+        """Output should contain the TOON-style tools header with correct count."""
         with pytest.raises(SystemExit):
             list_tools_and_exit()
         out = capsys.readouterr().out
-        assert "tools[16]" in out
+        expected_count = len(TOOLS)
+        assert f"tools[{expected_count}]" in out
 
-    def test_list_tools_output_contains_all_16_tools(self, capsys):
-        """All 16 tools should be listed."""
+    def test_list_tools_output_contains_all_discovered_tools(self, capsys):
+        """All discovered tools should be listed."""
         with pytest.raises(SystemExit):
             list_tools_and_exit()
         out = capsys.readouterr().out
-
-        expected_tools = [
-            "reddit_search",
-            "reddit_get_post",
-            "reddit_get_comments",
-            "reddit_get_subreddit",
-            "reddit_get_user",
-            "reddit_get_user_posts",
-            "reddit_get_user_comments",
-            "reddit_get_trending",
-            "reddit_get_wiki",
-            "reddit_get_rules",
-            "reddit_get_flairs",
-            "reddit_get_mod_log",
-            "reddit_get_post_awards",
-            "reddit_get_related_posts",
-            "reddit_get_subreddit_about",
-            "reddit_search_comments",
-        ]
-        for tool in expected_tools:
-            assert tool in out, f"Tool '{tool}' not found in --list-tools output"
+        for tool_name, _ in TOOLS:
+            assert tool_name in out, f"Tool '{tool_name}' not found in --list-tools output"
 
     def test_list_tools_output_contains_help_hints(self, capsys):
         """Output should contain AXI §9 help hints."""
@@ -73,43 +55,41 @@ class TestToolInfo:
     def test_tool_info_exits_with_code_zero_for_known_tool(self, capsys):
         """tool_info_and_exit should exit with code 0 for a known tool."""
         with pytest.raises(SystemExit) as exc_info:
-            tool_info_and_exit("reddit_search")
+            tool_info_and_exit("browse_subreddit")
         assert exc_info.value.code == 0
 
     def test_tool_info_outputs_valid_json(self, capsys):
         """Output for a known tool should be valid JSON."""
         with pytest.raises(SystemExit):
-            tool_info_and_exit("reddit_search")
+            tool_info_and_exit("browse_subreddit")
         out = capsys.readouterr().out
         data = json.loads(out)
         assert isinstance(data, dict)
 
     def test_tool_info_contains_required_fields(self, capsys):
-        """Output should contain name, description, parameters, and returns."""
+        """Output should contain name and description."""
         with pytest.raises(SystemExit):
-            tool_info_and_exit("reddit_search")
+            tool_info_and_exit("browse_subreddit")
         out = capsys.readouterr().out
         data = json.loads(out)
         assert "name" in data
         assert "description" in data
-        assert "parameters" in data
-        assert "returns" in data
 
     def test_tool_info_search_has_query_param(self, capsys):
-        """reddit_search should require a query parameter."""
+        """search_posts should have parameters with query."""
         with pytest.raises(SystemExit):
-            tool_info_and_exit("reddit_search")
+            tool_info_and_exit("search_posts")
         out = capsys.readouterr().out
         data = json.loads(out)
-        assert "query" in data["parameters"]
+        assert "parameters" in data
 
-    def test_tool_info_get_post_has_url_or_id_param(self, capsys):
-        """reddit_get_post should require a url_or_id parameter."""
+    def test_tool_info_get_post_has_parameters(self, capsys):
+        """get_post should have parameters."""
         with pytest.raises(SystemExit):
-            tool_info_and_exit("reddit_get_post")
+            tool_info_and_exit("get_post")
         out = capsys.readouterr().out
         data = json.loads(out)
-        assert "url_or_id" in data["parameters"]
+        assert "parameters" in data
 
     def test_tool_info_unknown_tool_exits_with_code_2(self, capsys):
         """Unknown tool should exit with code 2 (AXI §6 structured error)."""

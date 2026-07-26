@@ -7,7 +7,7 @@ def raise_tool_error(message: str, cause: Exception | None = None) -> None:
 
 def handle_api_error(e: Exception) -> None:
     if isinstance(e, AuthenticationError):
-        raise_tool_error("Session expired. Run `reddit-mcp --login` to re-authenticate.", e)
+        raise_tool_error("Session expired. Run `reddit-httpx --login` to re-authenticate.", e)
     elif isinstance(e, RateLimitError):
         raise_tool_error(f"Rate limited by Reddit. Wait {e.retry_after}s.", e)
     else:
