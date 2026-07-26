@@ -2,16 +2,70 @@ import json
 import os
 import sys
 import argparse
+import logging
 
-# ── TOON-like output helpers (AXI §1) ──────────────────────────────────────
+# ── TOON output helpers (AXI §1) ──────────────────────────────────────────
+
+def _toon_quote(val: str) -> str:
+    """Quote a string value per TOON spec when it contains special chars."""
+    if val == "":
+        return '""'
+    # Must quote: looks like bool/number, contains delimiter/colon/bracket, starts with -
+    needs_quote = (
+        val in ("true", "false", "null") or
+        val.lstrip("-").replace(".", "", 1).replace("e", "", 1).replace("+", "", 1).isdigit() or
+        any(c in val for c in (":", ",", '"', "[", "]", "{", "}", "#")) or
+        val.startswith("-") or val.startswith("#") or
+        val.startswith(" ") or val.endswith(" ") or
+        val.startswith('"') or val.endswith('"')
+    )
+    if needs_quote:
+        escaped = val.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
+        return f'"{escaped}"'
+    return val
+
+
+def _toon_kv(key: str, val) -> str:
+    """Emit a single key: value TOON line."""
+    if isinstance(val, bool):
+        return f"{key}: {'true' if val else 'false'}"
+    if isinstance(val, (int, float)):
+        return f"{key}: {val}"
+    return f"{key}: {_toon_quote(str(val))}"
+
 
 def axi_error(msg: str, hint: str = None) -> None:
-    """Print structured error to stdout (AXI §6) and exit with code 2."""
-    out = {"error": msg}
+    """Print structured error in TOON format (AXI §6) and exit with code 2."""
+    print(_toon_kv("error", msg))
     if hint:
-        out["help"] = hint
-    print(json.dumps(out))
+        print(_toon_kv("help", hint))
     sys.exit(2)
+
+
+def _toon_object(fields: dict) -> str:
+    """Render a flat or one-level-nested object as TOON text."""
+    lines = []
+    for k, v in fields.items():
+        if isinstance(v, dict):
+            lines.append(f"{k}:")
+            for sk, sv in v.items():
+                lines.append(f"  {_toon_kv(sk, sv)}")
+        elif isinstance(v, list):
+            # list of dicts → tabular
+            if v and isinstance(v[0], dict):
+                keys = list(v[0].keys())
+                hdr = ",".join(keys)
+                lines.append(f"{k}[{len(v)}]{{{hdr}}}:")
+                for item in v:
+                    cells = ",".join(_toon_quote(str(item.get(fk, ""))) for fk in keys)
+                    lines.append(f"  {cells}")
+            else:
+                # primitive list
+                items = ",".join(_toon_quote(str(x)) for x in v)
+                lines.append(f"{k}[{len(v)}]: {items}")
+        else:
+            lines.append(_toon_kv(k, v))
+    return "\n".join(lines)
 
 
 def _truncate(s: str, max_chars: int = 60) -> str:
@@ -61,7 +115,17 @@ def _discover_tools() -> list[tuple[str, str]]:
             ("get_my_profile", "Get the authenticated user's profile"),
         ]
 
-TOOLS = _discover_tools()
+
+# ponytail: lazy — _discover_tools() calls create_mcp_server() which logs;
+# defer past dup2 so the handler captures /devnull stderr, not the original.
+_TOOLS_CACHE = None
+
+
+def _get_tools() -> list[tuple[str, str]]:
+    global _TOOLS_CACHE
+    if _TOOLS_CACHE is None:
+        _TOOLS_CACHE = _discover_tools()
+    return _TOOLS_CACHE
 
 
 # ── AXI §8: Content-first home view ───────────────────────────────────────
@@ -119,8 +183,9 @@ def show_home_view() -> None:
     print()
 
     # Tool listing in TOON format (AXI §2: minimal schema)
-    print(f"tools[{len(TOOLS)}]{{name,description}}:")
-    for name, desc in TOOLS:
+    tools = _get_tools()
+    print(f"tools[{len(tools)}]{{name,description}}:")
+    for name, desc in tools:
         print(f"  {name},{_truncate(desc)}")
     print()
 
@@ -135,8 +200,9 @@ def show_home_view() -> None:
 
 def list_tools_and_exit() -> None:
     """List all available MCP tools and exit (AXI §8 content-first)."""
-    print(f"tools[{len(TOOLS)}]{{name,description}}:")
-    for name, desc in TOOLS:
+    tools = _get_tools()
+    print(f"tools[{len(tools)}]{{name,description}}:")
+    for name, desc in tools:
         print(f"  {name},{desc}")
     print()
     print("help[2]:")
@@ -146,7 +212,7 @@ def list_tools_and_exit() -> None:
 
 
 def tool_info_and_exit(tool_name: str) -> None:
-    """Show detailed info for a specific tool."""
+    """Show detailed info for a specific tool in TOON format."""
     try:
         import asyncio
         from reddit_mcp_server.server import create_mcp_server
@@ -154,11 +220,23 @@ def tool_info_and_exit(tool_name: str) -> None:
         tools_obj = asyncio.run(mcp.list_tools())
         tool = next((t for t in tools_obj if t.name == tool_name), None)
         if tool:
-            info = {"name": tool.name, "description": tool.description or ""}
-            # Extract parameter info from schema if available
-            if hasattr(tool, "parameters") and tool.parameters:
-                info["parameters"] = tool.parameters
-            print(json.dumps(info, indent=2, default=str))
+            fields = {"name": tool.name, "description": tool.description or ""}
+            # Flatten schema to TOON param list (AXI §2: minimal schemas)
+            schema = getattr(tool, "inputSchema", None) or getattr(tool, "parameters", None) or {}
+            if isinstance(schema, dict):
+                props = schema.get("properties", {})
+                required = set(schema.get("required", []))
+                if props:
+                    params = []
+                    for pname, pdef in props.items():
+                        params.append({
+                            "name": pname,
+                            "type": pdef.get("type", "any"),
+                            "required": "true" if pname in required else "false",
+                            "description": pdef.get("description", "")[:80]
+                        })
+                    fields["params"] = params
+            print(_toon_object(fields))
         else:
             valid = sorted([t.name for t in tools_obj])
             axi_error(f"Unknown tool: '{tool_name}'", f"Valid tools: {', '.join(valid)}")
@@ -226,7 +304,7 @@ def main():
         cookies = import_cookies_interactive()
         if cookies:
             save_cookies(cookies)
-            print(json.dumps({"status": "success", "message": "Cookies saved."}))
+            print(_toon_object({"status": "success", "message": "Cookies saved."}))
         else:
             axi_error("Login failed. No cookies extracted.", "Ensure you are logged into Reddit in your browser.")
         return
@@ -243,7 +321,7 @@ def main():
             if not isinstance(cookies, dict) or not cookies:
                 axi_error("Invalid cookies file.", "Expected JSON object with cookie names as keys.")
             save_cookies(cookies)
-            print(json.dumps({"status": "success", "message": f"Imported {len(cookies)} cookies from {path.name}."}))
+            print(_toon_object({"status": "success", "message": f"Imported {len(cookies)} cookies from {path.name}."}))
         except json.JSONDecodeError:
             axi_error("Invalid JSON in cookies file.", "File must contain valid JSON.")
         return
@@ -251,7 +329,7 @@ def main():
     if args.logout:
         from reddit_mcp_server.session_state import clear_cookies
         clear_cookies()
-        print(json.dumps({"status": "success", "message": "Logged out. Cookies cleared."}))
+        print(_toon_object({"status": "success", "message": "Logged out. Cookies cleared."}))
         return
 
     if args.status:
@@ -259,8 +337,25 @@ def main():
         from reddit_mcp_server.authentication import get_auth_status
         initialize_bootstrap()  # loads REDDIT_COOKIES env var if present
         status = get_auth_status()
-        print(json.dumps({"status": "ok", "auth": status}))
+        print(_toon_object({"status": "ok", "auth": status}))
         return
+
+    # Detect interactive vs MCP-client invocation early so we can suppress
+    # logging noise before any server code runs (AXI §1: clean stderr for agents).
+    interactive = sys.stdin.isatty()
+    is_mcp_stdio = (not interactive) or (args.transport == "stdio")
+
+    # In stdio MCP mode, silence ALL stderr output at the OS level.
+    # MCP clients read stdout (JSON-RPC) only — all stderr is noise.
+    if is_mcp_stdio:
+        os.environ["FASTMCP_LOG_LEVEL"] = "WARNING"
+        os.environ["REDDIT_MCP_LOG_LEVEL"] = "WARNING"
+        # Redirect fd 2 (stderr) to /devnull at the OS level before any imports.
+        # This silences logging, FastMCP banner, curl_cffi warnings — everything.
+        devnull_fd = os.open(os.devnull, os.O_WRONLY)
+        os.dup2(devnull_fd, sys.stderr.fileno())
+        os.close(devnull_fd)
+        sys.stderr = open(os.devnull, "w")  # Python-level redirect too
 
     # Start MCP server
     from reddit_mcp_server.bootstrap import initialize_bootstrap
@@ -270,14 +365,14 @@ def main():
     mcp = create_mcp_server()
 
     if len(sys.argv) == 1:
-        if sys.stdin.isatty():
+        if interactive:
             # Interactive terminal: show home view (CLI mode)
             show_home_view()
             return
         # Pipe from MCP client (e.g. Claude Desktop): start server
-        mcp.run(transport="stdio")
-    elif args.transport == "stdio":
-        mcp.run(transport="stdio")
+        mcp.run(transport="stdio", show_banner=False)
+    elif is_mcp_stdio:
+        mcp.run(transport="stdio", show_banner=False)
     else:
         mcp.run(transport="streamable-http", host="0.0.0.0", port=args.port)
 
