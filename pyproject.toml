@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "reddit-httpx-mcp"
 version = "0.1.0"
 description = "Reddit MCP server using browser cookies and curl_cffi"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 dependencies = [
     "fastmcp>=2.0.0",
     "curl_cffi>=0.7.0",
