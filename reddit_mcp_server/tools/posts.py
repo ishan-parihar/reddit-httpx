@@ -7,10 +7,10 @@ from reddit_mcp_server.error_handler import handle_api_error
 
 def _parse_post_id(post_id_or_url: str) -> tuple[str | None, str]:
     """Extract (subreddit, post_id) from URL or bare ID."""
-    m = re.search(r'/r/([^/]+)/comments/([a-z0-9]+)', post_id_or_url)
+    m = re.search(r"/r/([^/]+)/comments/([a-z0-9]+)", post_id_or_url)
     if m:
         return m.group(1), m.group(2)
-    m = re.search(r'redd\.it/([a-z0-9]+)', post_id_or_url)
+    m = re.search(r"redd\.it/([a-z0-9]+)", post_id_or_url)
     if m:
         return None, m.group(1)
     return None, post_id_or_url.strip()

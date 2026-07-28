@@ -10,11 +10,13 @@ from reddit_mcp_server.logging_config import logger
 BROWSER_PATHS = {
     "brave": {
         "linux": Path.home() / ".config/BraveSoftware/Brave-Browser/Default/Cookies",
-        "darwin": Path.home() / "Library/Application Support/BraveSoftware/Brave-Browser/Default/Cookies",
+        "darwin": Path.home()
+        / "Library/Application Support/BraveSoftware/Brave-Browser/Default/Cookies",
     },
     "chrome": {
         "linux": Path.home() / ".config/google-chrome/Default/Cookies",
-        "darwin": Path.home() / "Library/Application Support/Google/Chrome/Default/Cookies",
+        "darwin": Path.home()
+        / "Library/Application Support/Google/Chrome/Default/Cookies",
     },
     "firefox": {
         "linux": Path.home() / ".mozilla/firefox",
@@ -22,7 +24,8 @@ BROWSER_PATHS = {
     },
     "edge": {
         "linux": Path.home() / ".config/microsoft-edge/Default/Cookies",
-        "darwin": Path.home() / "Library/Application Support/Microsoft Edge/Default/Cookies",
+        "darwin": Path.home()
+        / "Library/Application Support/Microsoft Edge/Default/Cookies",
     },
     "zen": {
         "linux": Path.home() / ".zen",
@@ -30,8 +33,10 @@ BROWSER_PATHS = {
     },
 }
 
+
 def _get_platform() -> str:
     return "darwin" if sys.platform == "darwin" else "linux"
+
 
 def _find_firefox_cookies() -> Path | None:
     platform = _get_platform()
@@ -59,13 +64,17 @@ def _find_zen_cookies() -> Path | None:
                 return cookies_file
     return None
 
+
 def _get_chromium_key(browser: str) -> bytes | None:
     """Get the decryption key for Chromium cookies on Linux."""
     try:
         from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
         from cryptography.hazmat.primitives import hashes
+
         # Linux: key derived from 'peanuts' password with PBKDF2
-        kdf = PBKDF2HMAC(algorithm=hashes.SHA1(), length=16, salt=b"saltysalt", iterations=1)
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA1(), length=16, salt=b"saltysalt", iterations=1
+        )
         return kdf.derive(b"peanuts")
     except Exception as e:
         logger.debug(f"Could not derive chromium key: {e}")
@@ -80,6 +89,7 @@ def _decrypt_chromium_value(encrypted_value: bytes, key: bytes) -> str:
         encrypted_value = encrypted_value[3:]
         try:
             from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
             iv = b" " * 16
             cipher = Cipher(algorithms.AES(key), modes.CBC(iv))
             decryptor = cipher.decryptor()
@@ -124,9 +134,10 @@ def _extract_chromium_cookies(db_path: Path, browser: str = "chrome") -> dict[st
         os.unlink(tmp.name)
     return cookies
 
+
 def _extract_firefox_cookies(db_path: Path) -> dict[str, str]:
     """Extract cookies from Firefox or Zen browser (both use moz_cookies table).
-    
+
     Firefox uses `baseDomain`, Zen uses `host`. We try both columns.
     """
     if not db_path.exists():
@@ -141,7 +152,7 @@ def _extract_firefox_cookies(db_path: Path) -> dict[str, str]:
         cursor = conn.execute("PRAGMA table_info(moz_cookies)")
         columns = {row[1] for row in cursor.fetchall()}
         domain_col = "host" if "host" in columns else "baseDomain"
-        
+
         cursor = conn.execute(
             f"SELECT name, value FROM moz_cookies WHERE {domain_col} LIKE '%reddit.com' AND value != ''"
         )
@@ -151,6 +162,7 @@ def _extract_firefox_cookies(db_path: Path) -> dict[str, str]:
     finally:
         os.unlink(tmp.name)
     return cookies
+
 
 def extract_cookies_from_browser(browser: str) -> dict[str, str]:
     platform = _get_platform()
@@ -169,6 +181,7 @@ def extract_cookies_from_browser(browser: str) -> dict[str, str]:
         return {}
     return _extract_chromium_cookies(db_path, browser)
 
+
 def detect_available_browsers() -> list[str]:
     available = []
     platform = _get_platform()
@@ -185,6 +198,7 @@ def detect_available_browsers() -> list[str]:
                 available.append(browser)
     return available
 
+
 def import_cookies_interactive() -> dict[str, str]:
     browsers = detect_available_browsers()
     if not browsers:
@@ -196,7 +210,10 @@ def import_cookies_interactive() -> dict[str, str]:
     else:
         try:
             import inquirer
-            answers = inquirer.prompt([inquirer.List("browser", message="Select browser", choices=browsers)])
+
+            answers = inquirer.prompt(
+                [inquirer.List("browser", message="Select browser", choices=browsers)]
+            )
             browser = answers["browser"] if answers else browsers[0]
         except Exception:
             browser = browsers[0]
@@ -212,6 +229,7 @@ def import_cookies_from_file(path: str) -> dict[str, str]:
     """Import cookies from a JSON file. Supports both flat {name: value} and
     {"cookies": {name: value}} formats."""
     from pathlib import Path
+
     p = Path(path)
     if not p.exists():
         logger.error(f"File not found: {path}")

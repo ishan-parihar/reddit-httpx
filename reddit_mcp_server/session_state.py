@@ -6,10 +6,12 @@ from reddit_mcp_server.constants import DEFAULT_PROFILE_DIR, COOKIES_FILE
 
 OLD_PROFILE_DIR = "~/.reddit-mcp"
 
+
 def get_profile_dir() -> Path:
     d = Path(os.environ.get("REDDIT_MCP_PROFILE_DIR", DEFAULT_PROFILE_DIR)).expanduser()
     d.mkdir(parents=True, exist_ok=True)
     return d
+
 
 def _migrate_if_needed() -> None:
     """One-time migration: copy cookies from ~/.reddit-mcp/ to ~/.reddit-httpx/ if needed."""
@@ -19,9 +21,11 @@ def _migrate_if_needed() -> None:
         new.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(old, new)
 
+
 def get_cookies_path() -> Path:
     _migrate_if_needed()
     return get_profile_dir() / COOKIES_FILE
+
 
 def load_cookies() -> dict[str, str]:
     path = get_cookies_path()
@@ -30,9 +34,11 @@ def load_cookies() -> dict[str, str]:
     data = json.loads(path.read_text())
     return data.get("cookies", data) if isinstance(data, dict) else {}
 
+
 def save_cookies(cookies: dict[str, str]) -> None:
     path = get_cookies_path()
     path.write_text(json.dumps({"cookies": cookies}, indent=2))
+
 
 def clear_cookies() -> None:
     path = get_cookies_path()

@@ -19,7 +19,7 @@ class RateLimiter:
         # When remaining drops below this, sleep until reset
         self._min_remaining = min_remaining
         self._reset_at: float = 0.0  # epoch when window resets
-        self._remaining: int = 999   # assume generous until first response
+        self._remaining: int = 999  # assume generous until first response
         self._lock = asyncio.Lock()
 
     def update_from_headers(self, headers: dict) -> None:
@@ -43,7 +43,9 @@ class RateLimiter:
             if self._remaining <= self._min_remaining and self._reset_at > 0:
                 wait = max(0.0, self._reset_at - time.time())
                 if wait > 0:
-                    logger.info(f"Rate limiter: {self._remaining} remaining, sleeping {wait:.1f}s until reset")
+                    logger.info(
+                        f"Rate limiter: {self._remaining} remaining, sleeping {wait:.1f}s until reset"
+                    )
                     await asyncio.sleep(wait)
                     # After sleeping, assume the window has refreshed
                     self._remaining = 999

@@ -16,7 +16,9 @@ def register_browse_tools(mcp: FastMCP) -> None:
         """Browse posts from a subreddit."""
         try:
             client = await get_reddit_client()
-            return await client.get_subreddit_posts(subreddit, sort, limit, time_filter, after)
+            return await client.get_subreddit_posts(
+                subreddit, sort, limit, time_filter, after
+            )
         except Exception as e:
             handle_api_error(e)
 

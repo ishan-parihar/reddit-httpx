@@ -8,31 +8,82 @@ After:  {"posts": [{"id": "...", "title": "...", "score": 1, "num_comments": 5, 
 """
 
 POST_FIELDS = {
-    "id", "title", "author", "subreddit", "score", "num_comments", "upvote_ratio",
-    "url", "selftext", "permalink", "created_utc", "link_flair_text",
-    "is_self", "domain", "thumbnail", "over_18", "spoiler", "locked",
-    "stickied", "distinguished", "name",  # name = fullname (t3_xxx)
+    "id",
+    "title",
+    "author",
+    "subreddit",
+    "score",
+    "num_comments",
+    "upvote_ratio",
+    "url",
+    "selftext",
+    "permalink",
+    "created_utc",
+    "link_flair_text",
+    "is_self",
+    "domain",
+    "thumbnail",
+    "over_18",
+    "spoiler",
+    "locked",
+    "stickied",
+    "distinguished",
+    "name",  # name = fullname (t3_xxx)
 }
 
 COMMENT_FIELDS = {
-    "id", "author", "body", "score", "created_utc", "depth", "parent_id",
-    "permalink", "name", "distinguished", "stickied", "controversiality",
+    "id",
+    "author",
+    "body",
+    "score",
+    "created_utc",
+    "depth",
+    "parent_id",
+    "permalink",
+    "name",
+    "distinguished",
+    "stickied",
+    "controversiality",
 }
 
 SUBREDDIT_FIELDS = {
-    "id", "display_name", "title", "public_description", "subscribers",
-    "active_user_count", "created_utc", "over18", "wiki_enabled",
-    "rules", "name",
+    "id",
+    "display_name",
+    "title",
+    "public_description",
+    "subscribers",
+    "active_user_count",
+    "created_utc",
+    "over18",
+    "wiki_enabled",
+    "rules",
+    "name",
 }
 
 USER_FIELDS = {
-    "id", "name", "link_karma", "comment_karma", "total_karma",
-    "created_utc", "has_verified_email", "is_gold", "is_mod",
+    "id",
+    "name",
+    "link_karma",
+    "comment_karma",
+    "total_karma",
+    "created_utc",
+    "has_verified_email",
+    "is_gold",
+    "is_mod",
 }
 
 MESSAGE_FIELDS = {
-    "id", "author", "body", "subject", "name", "created_utc", "was_read",
-    "score", "dest", "context", "replies",
+    "id",
+    "author",
+    "body",
+    "subject",
+    "name",
+    "created_utc",
+    "was_read",
+    "score",
+    "dest",
+    "context",
+    "replies",
 }
 
 # AXI §3: truncate long text fields to save tokens
@@ -55,7 +106,11 @@ def _extract_fields(data: dict, allowed: set) -> dict:
         if k not in allowed or v is None:
             continue
         # Truncate long body/selftext fields (AXI §3)
-        if k in ("selftext", "body") and isinstance(v, str) and len(v) > MAX_TEXT_LENGTH:
+        if (
+            k in ("selftext", "body")
+            and isinstance(v, str)
+            and len(v) > MAX_TEXT_LENGTH
+        ):
             _truncate_text(v, k, out)
         else:
             out[k] = v
@@ -67,7 +122,15 @@ def normalize_listing(raw: dict, item_type: str = "post") -> dict:
 
     Returns: {"items": [...], "next": "t3_xxx" | None, "before": "t3_xxx" | None}
     """
-    allowed = POST_FIELDS if item_type == "post" else COMMENT_FIELDS if item_type == "comment" else MESSAGE_FIELDS if item_type == "message" else SUBREDDIT_FIELDS
+    allowed = (
+        POST_FIELDS
+        if item_type == "post"
+        else COMMENT_FIELDS
+        if item_type == "comment"
+        else MESSAGE_FIELDS
+        if item_type == "message"
+        else SUBREDDIT_FIELDS
+    )
 
     data = raw.get("data", {})
     children = data.get("children", [])
@@ -111,7 +174,11 @@ def normalize_post_with_comments(raw: list) -> dict:
 
     # Extract comments
     comment_children = comment_listing.get("data", {}).get("children", [])
-    comments = [_extract_fields(c.get("data", {}), COMMENT_FIELDS) for c in comment_children if c.get("kind") == "t1"]
+    comments = [
+        _extract_fields(c.get("data", {}), COMMENT_FIELDS)
+        for c in comment_children
+        if c.get("kind") == "t1"
+    ]
     next_comment = comment_listing.get("data", {}).get("after")
 
     return {"post": post, "comments": comments, "next_comments": next_comment}

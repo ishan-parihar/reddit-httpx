@@ -11,7 +11,11 @@ def register_moderation_tools(mcp: FastMCP) -> None:
         try:
             client = await get_reddit_client()
             await client.mod_remove(thing_id, spam)
-            return {"ok": True, "action": "removed_spam" if spam else "removed", "id": thing_id}
+            return {
+                "ok": True,
+                "action": "removed_spam" if spam else "removed",
+                "id": thing_id,
+            }
         except Exception as e:
             handle_api_error(e)
 
@@ -44,7 +48,11 @@ def register_moderation_tools(mcp: FastMCP) -> None:
         try:
             client = await get_reddit_client()
             await client.mod_sticky(thing_id, state)
-            return {"ok": True, "action": "stickied" if state else "unstickied", "id": thing_id}
+            return {
+                "ok": True,
+                "action": "stickied" if state else "unstickied",
+                "id": thing_id,
+            }
         except Exception as e:
             handle_api_error(e)
 

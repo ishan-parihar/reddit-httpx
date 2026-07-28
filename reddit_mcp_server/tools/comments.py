@@ -9,7 +9,7 @@ def register_comment_tools(mcp: FastMCP) -> None:
         """Comment on a post. parent_id format: t3_xxxxx (post) or t1_xxxxx (comment for reply)."""
         try:
             client = await get_reddit_client()
-            result = await client.comment(parent_id, text)
+            await client.comment(parent_id, text)
             return {"ok": True, "action": "commented", "id": parent_id}
         except Exception as e:
             handle_api_error(e)
@@ -19,7 +19,7 @@ def register_comment_tools(mcp: FastMCP) -> None:
         """Reply to a comment. comment_id format: t1_xxxxx."""
         try:
             client = await get_reddit_client()
-            result = await client.comment(comment_id, text)
+            await client.comment(comment_id, text)
             return {"ok": True, "action": "replied", "id": comment_id}
         except Exception as e:
             handle_api_error(e)

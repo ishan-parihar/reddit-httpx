@@ -2,9 +2,9 @@ import json
 import os
 import sys
 import argparse
-import logging
 
 # ── TOON output helpers (AXI §1) ──────────────────────────────────────────
+
 
 def _toon_quote(val: str) -> str:
     """Quote a string value per TOON spec when it contains special chars."""
@@ -12,12 +12,19 @@ def _toon_quote(val: str) -> str:
         return '""'
     # Must quote: looks like bool/number, contains delimiter/colon/bracket, starts with -
     needs_quote = (
-        val in ("true", "false", "null") or
-        val.lstrip("-").replace(".", "", 1).replace("e", "", 1).replace("+", "", 1).isdigit() or
-        any(c in val for c in (":", ",", '"', "[", "]", "{", "}", "#")) or
-        val.startswith("-") or val.startswith("#") or
-        val.startswith(" ") or val.endswith(" ") or
-        val.startswith('"') or val.endswith('"')
+        val in ("true", "false", "null")
+        or val.lstrip("-")
+        .replace(".", "", 1)
+        .replace("e", "", 1)
+        .replace("+", "", 1)
+        .isdigit()
+        or any(c in val for c in (":", ",", '"', "[", "]", "{", "}", "#"))
+        or val.startswith("-")
+        or val.startswith("#")
+        or val.startswith(" ")
+        or val.endswith(" ")
+        or val.startswith('"')
+        or val.endswith('"')
     )
     if needs_quote:
         escaped = val.replace("\\", "\\\\").replace('"', '\\"').replace("\n", "\\n")
@@ -90,14 +97,19 @@ def _get_bin_path() -> str:
 
 # ── Tool registry (auto-discovered from MCP server) ────────────────────────
 
+
 def _discover_tools() -> list[tuple[str, str]]:
     """Dynamically list all registered MCP tools with their docstrings."""
     try:
         import asyncio
         from reddit_mcp_server.server import create_mcp_server
+
         mcp = create_mcp_server()
         tools_obj = asyncio.run(mcp.list_tools())
-        return sorted([(t.name, (t.description or "").split("\n")[0].strip()) for t in tools_obj], key=lambda x: x[0])
+        return sorted(
+            [(t.name, (t.description or "").split("\n")[0].strip()) for t in tools_obj],
+            key=lambda x: x[0],
+        )
     except Exception:
         # Fallback: static list if discovery fails
         return [
@@ -130,35 +142,18 @@ def _get_tools() -> list[tuple[str, str]]:
 
 # ── AXI §8: Content-first home view ───────────────────────────────────────
 
-def _get_username() -> str:
-    """Fetch username from Reddit's /api/me.json endpoint."""
-    try:
-        from reddit_mcp_server.session_state import load_cookies
-        from reddit_mcp_server.scraping.api_client import RedditAPIClient
-        cookies = load_cookies()
-        if not cookies:
-            return "unknown"
-        import asyncio
-        client = RedditAPIClient(cookies)
-        try:
-            data = asyncio.run(client.me())
-            return data.get("data", {}).get("name", "unknown")
-        finally:
-            asyncio.run(client.close())
-    except Exception:
-        return "unknown"
 
-
-def show_home_view() -> None:
+def show_home_view(fields: list[str] | None = None) -> None:
     """Show live state when no args provided (AXI §8)."""
     bin_path = _get_bin_path()
 
-    # Check session state
+    # Check session state (no network call — AXI §8: content-first, instant)
     has_cookies = False
     auth_status = {"authenticated": False}
     try:
         from reddit_mcp_server.session_state import load_cookies
         from reddit_mcp_server.authentication import get_auth_status
+
         has_cookies = load_cookies() is not None
         if has_cookies:
             auth_status = get_auth_status()
@@ -168,42 +163,66 @@ def show_home_view() -> None:
 
     # AXI §10: Tool identity header
     print(f"bin: {bin_path}")
-    print(f"description: Reddit MCP server — browsing, posting, commenting, voting, and moderation")
+    print(
+        "description: Reddit MCP server — browsing, posting, commenting, voting, and moderation"
+    )
     print()
 
     # Live session state
     print("session:")
     if has_cookies and auth_status.get("authenticated", False):
-        username = _get_username()
-        print(f"  status: authenticated")
-        print(f"  username: {username}")
+        print("  status: authenticated")
+        # Include cookies count if requested
+        if fields and "cookies" in fields:
+            print(f"  cookies: {auth_status.get('cookies_count', 0)}")
     else:
-        print(f"  status: not_authenticated")
-        print(f"  help: Run `reddit-httpx --login` or `reddit-httpx --cookies-file <path>`")
+        print("  status: not_authenticated")
+        print(
+            "  help: Run `reddit-httpx --login` or `reddit-httpx --cookies-file <path>`"
+        )
     print()
 
     # Tool listing in TOON format (AXI §2: minimal schema)
     tools = _get_tools()
-    print(f"tools[{len(tools)}]{{name,description}}:")
+    # Default minimal schema: name,description. Extend if fields requested.
+    schema_fields = ["name", "description"]
+    if fields:
+        for f in fields:
+            if f not in schema_fields:
+                schema_fields.append(f)
+    print(f"tools[{len(tools)}]{{{','.join(schema_fields)}}}:")
     for name, desc in tools:
-        print(f"  {name},{_truncate(desc)}")
+        row = [name, _truncate(desc)]
+        # Currently only name and description are available for tools
+        print(f"  {','.join(row)}")
     print()
 
-    # AXI §9: Contextual disclosure
-    print("help[5]:")
-    print("  Run `reddit-httpx --tool-info <name>` for detailed parameters")
-    print("  Run `reddit-httpx --list-tools` to see all tools")
-    print("  Run `reddit-httpx --login` to import browser cookies")
-    print("  Run `reddit-httpx --cookies-file <path>` to import cookies from JSON")
-    print("  Run `reddit-httpx` to start the MCP server")
+    # AXI §9: Contextual disclosure (dynamic count)
+    hints = [
+        "Run `reddit-httpx --tool-info <name>` for detailed parameters",
+        "Run `reddit-httpx --list-tools` to see all tools",
+        "Run `reddit-httpx --login` to import browser cookies",
+        "Run `reddit-httpx --cookies-file <path>` to import cookies from JSON",
+        "Run `reddit-httpx` to start the MCP server",
+    ]
+    print(f"help[{len(hints)}]:")
+    for h in hints:
+        print(f"  {h}")
 
 
-def list_tools_and_exit() -> None:
+def list_tools_and_exit(fields: list[str] | None = None) -> None:
     """List all available MCP tools and exit (AXI §8 content-first)."""
     tools = _get_tools()
-    print(f"tools[{len(tools)}]{{name,description}}:")
+    # Default minimal schema: name,description. Extend if fields requested.
+    schema_fields = ["name", "description"]
+    if fields:
+        for f in fields:
+            if f not in schema_fields:
+                schema_fields.append(f)
+    print(f"tools[{len(tools)}]{{{','.join(schema_fields)}}}:")
     for name, desc in tools:
-        print(f"  {name},{desc}")
+        row = [name, desc]
+        print(f"  {','.join(row)}")
     print()
     print("help[2]:")
     print("  Run `reddit-httpx --tool-info <name>` for details")
@@ -216,36 +235,143 @@ def tool_info_and_exit(tool_name: str) -> None:
     try:
         import asyncio
         from reddit_mcp_server.server import create_mcp_server
+
         mcp = create_mcp_server()
         tools_obj = asyncio.run(mcp.list_tools())
         tool = next((t for t in tools_obj if t.name == tool_name), None)
         if tool:
             fields = {"name": tool.name, "description": tool.description or ""}
             # Flatten schema to TOON param list (AXI §2: minimal schemas)
-            schema = getattr(tool, "inputSchema", None) or getattr(tool, "parameters", None) or {}
+            schema = (
+                getattr(tool, "inputSchema", None)
+                or getattr(tool, "parameters", None)
+                or {}
+            )
             if isinstance(schema, dict):
                 props = schema.get("properties", {})
                 required = set(schema.get("required", []))
                 if props:
                     params = []
                     for pname, pdef in props.items():
-                        params.append({
-                            "name": pname,
-                            "type": pdef.get("type", "any"),
-                            "required": "true" if pname in required else "false",
-                            "description": pdef.get("description", "")[:80]
-                        })
+                        params.append(
+                            {
+                                "name": pname,
+                                "type": pdef.get("type", "any"),
+                                "required": "true" if pname in required else "false",
+                                "description": _truncate(pdef.get("description", ""), 80),
+                            }
+                        )
                     fields["params"] = params
             print(_toon_object(fields))
         else:
             valid = sorted([t.name for t in tools_obj])
-            axi_error(f"Unknown tool: '{tool_name}'", f"Valid tools: {', '.join(valid)}")
+            axi_error(
+                f"Unknown tool: '{tool_name}'", f"Valid tools: {', '.join(valid)}"
+            )
     except Exception as e:
         axi_error(f"Failed to load tool info: {e}")
     sys.exit(0)
 
 
+
+def install_session_hook() -> None:
+    """Install session hook for ambient context (AXI §7)."""
+    import os
+    import json
+    import sys
+
+    bin_path = _get_bin_path()
+    if bin_path.startswith("~"):
+        home = os.path.expanduser("~")
+        bin_path = bin_path.replace("~", home, 1)
+
+    hooks_installed = []
+
+    # Claude Code: ~/.claude/settings.json
+    claude_settings = os.path.expanduser("~/.claude/settings.json")
+    try:
+        if os.path.exists(claude_settings):
+            with open(claude_settings) as f:
+                settings = json.load(f)
+        else:
+            settings = {}
+        hooks = settings.get("hooks", {})
+        session_start = hooks.get("SessionStart", [])
+        already = any(
+            h.get("command") == f"{bin_path} --status"
+            for h in session_start
+            if isinstance(h, dict)
+        )
+        if not already:
+            session_start.append({"command": f"{bin_path} --status"})
+            hooks["SessionStart"] = session_start
+            settings["hooks"] = hooks
+            os.makedirs(os.path.dirname(claude_settings), exist_ok=True)
+            with open(claude_settings, "w") as f:
+                json.dump(settings, f, indent=2)
+            hooks_installed.append("Claude Code")
+    except Exception as e:
+        print(f"Claude Code hook: {e}", file=sys.stderr)
+
+    # Codex: ~/.codex/hooks.json
+    codex_hooks = os.path.expanduser("~/.codex/hooks.json")
+    try:
+        if os.path.exists(codex_hooks):
+            with open(codex_hooks) as f:
+                hooks = json.load(f)
+        else:
+            hooks = {}
+        session_start = hooks.get("SessionStart", [])
+        already = any(
+            h.get("command") == f"{bin_path} --status"
+            for h in session_start
+            if isinstance(h, dict)
+        )
+        if not already:
+            session_start.append({"command": f"{bin_path} --status"})
+            hooks["SessionStart"] = session_start
+            os.makedirs(os.path.dirname(codex_hooks), exist_ok=True)
+            with open(codex_hooks, "w") as f:
+                json.dump(hooks, f, indent=2)
+            hooks_installed.append("Codex")
+    except Exception as e:
+        print(f"Codex hook: {e}", file=sys.stderr)
+
+    # OpenCode: ~/.config/opencode/plugin.json
+    opencode_plugin = os.path.expanduser("~/.config/opencode/plugin.json")
+    try:
+        if os.path.exists(opencode_plugin):
+            with open(opencode_plugin) as f:
+                plugin = json.load(f)
+        else:
+            plugin = {"name": "reddit-httpx", "hooks": {}}
+        hooks = plugin.get("hooks", {})
+        session_start = hooks.get("session_start", [])
+        already = any(
+            h.get("command") == f"{bin_path} --status"
+            for h in session_start
+            if isinstance(h, dict)
+        )
+        if not already:
+            session_start.append({"command": f"{bin_path} --status"})
+            hooks["session_start"] = session_start
+            plugin["hooks"] = hooks
+            os.makedirs(os.path.dirname(opencode_plugin), exist_ok=True)
+            with open(opencode_plugin, "w") as f:
+                json.dump(plugin, f, indent=2)
+            hooks_installed.append("OpenCode")
+    except Exception as e:
+        print(f"OpenCode hook: {e}", file=sys.stderr)
+
+    if hooks_installed:
+        print(_toon_object({"status": "success", "message": f"Installed hooks for: {', '.join(hooks_installed)}"}))
+    else:
+        print(_toon_object({"status": "info", "message": "Hooks already installed or no supported editors found"}))
+    sys.exit(0)
+
+
 def show_help() -> None:
+
     """Show usage information (AXI §10)."""
     print("reddit-httpx v0.1.0")
     print("Reddit MCP server — browsing, posting, commenting, voting, and moderation")
@@ -258,6 +384,7 @@ def show_help() -> None:
     print("  reddit-httpx --cookies-file F   Import cookies from a JSON file")
     print("  reddit-httpx --logout           Clear stored session")
     print("  reddit-httpx --status           Check authentication status")
+    print("  reddit-httpx --fields <fields>  Comma-separated extra fields for lists")
     print("  reddit-httpx --help             Show this help message")
     print()
     print("Environment:")
@@ -267,33 +394,76 @@ def show_help() -> None:
     print("Examples:")
     print("  reddit-httpx --tool-info search_posts")
     print("  reddit-httpx --list-tools")
+    print("  reddit-httpx --list-tools --fields cookies")
     print("  reddit-httpx --login")
     print("  reddit-httpx --cookies-file ~/reddit-cookies.json")
 
 
 def main():
     parser = argparse.ArgumentParser(description="Reddit MCP Server", add_help=False)
-    parser.add_argument("--login", action="store_true", help="Import cookies from browser")
-    parser.add_argument("--cookies-file", type=str, metavar="PATH", help="Import cookies from a JSON file")
+    parser.add_argument(
+        "--login", action="store_true", help="Import cookies from browser"
+    )
+    parser.add_argument(
+        "--cookies-file",
+        type=str,
+        metavar="PATH",
+        help="Import cookies from a JSON file",
+    )
     parser.add_argument("--logout", action="store_true", help="Clear stored session")
-    parser.add_argument("--status", action="store_true", help="Check authentication status")
-    parser.add_argument("--list-tools", action="store_true", help="List all available MCP tools")
-    parser.add_argument("--tool-info", type=str, metavar="TOOL", help="Show details for a specific tool")
-    parser.add_argument("--transport", choices=["stdio", "streamable-http"], default="stdio", help="MCP transport")
-    parser.add_argument("--port", type=int, default=8000, help="Port for HTTP transport")
+    parser.add_argument(
+        "--status", action="store_true", help="Check authentication status"
+    )
+    parser.add_argument(
+        "--list-tools", action="store_true", help="List all available MCP tools"
+    )
+    parser.add_argument(
+        "--tool-info", type=str, metavar="TOOL", help="Show details for a specific tool"
+    )
+    parser.add_argument(
+        "--fields",
+        type=str,
+        metavar="FIELDS",
+        help="Comma-separated list of extra fields to include in list outputs (e.g., --fields cookies)",
+    )
+    parser.add_argument(
+        "--install-hook",
+        action="store_true",
+        help="Install session hook for ambient context (Claude Code, Codex, OpenCode)",
+    )
+    parser.add_argument(
+        "--transport",
+        choices=["stdio", "streamable-http"],
+        default="stdio",
+        help="MCP transport",
+    )
+    parser.add_argument(
+        "--port", type=int, default=8000, help="Port for HTTP transport"
+    )
     parser.add_argument("--help", "-h", action="store_true", help="Show help message")
     args, unknown = parser.parse_known_args()
 
     # AXI §6: Fail loud on unrecognized input
     if unknown:
-        axi_error(f"Unknown flag: '{unknown[0]}'", "Run `reddit-httpx --help` for usage")
+        axi_error(
+            f"Unknown flag: '{unknown[0]}'", "Run `reddit-httpx --help` for usage"
+        )
+
+    # Parse --fields into list
+    extra_fields = []
+    if args.fields:
+        extra_fields = [f.strip() for f in args.fields.split(",") if f.strip()]
 
     if args.help:
         show_help()
         return
 
+    if args.install_hook:
+        install_session_hook()
+        return
+
     if args.list_tools:
-        list_tools_and_exit()
+        list_tools_and_exit(extra_fields)
 
     if args.tool_info:
         tool_info_and_exit(args.tool_info)
@@ -301,40 +471,63 @@ def main():
     if args.login:
         from reddit_mcp_server.cookie_import import import_cookies_interactive
         from reddit_mcp_server.session_state import save_cookies
+
         cookies = import_cookies_interactive()
         if cookies:
             save_cookies(cookies)
             print(_toon_object({"status": "success", "message": "Cookies saved."}))
         else:
-            axi_error("Login failed. No cookies extracted.", "Ensure you are logged into Reddit in your browser.")
+            axi_error(
+                "Login failed. No cookies extracted.",
+                "Ensure you are logged into Reddit in your browser.",
+            )
         return
 
     if args.cookies_file:
         from reddit_mcp_server.session_state import save_cookies
         from pathlib import Path
+
         path = Path(args.cookies_file)
         if not path.exists():
-            axi_error(f"File not found: {args.cookies_file}", "Check the path and try again.")
+            axi_error(
+                f"File not found: {args.cookies_file}", "Check the path and try again."
+            )
         try:
             data = json.loads(path.read_text())
             cookies = data.get("cookies", data) if isinstance(data, dict) else data
             if not isinstance(cookies, dict) or not cookies:
-                axi_error("Invalid cookies file.", "Expected JSON object with cookie names as keys.")
+                axi_error(
+                    "Invalid cookies file.",
+                    "Expected JSON object with cookie names as keys.",
+                )
             save_cookies(cookies)
-            print(_toon_object({"status": "success", "message": f"Imported {len(cookies)} cookies from {path.name}."}))
+            print(
+                _toon_object(
+                    {
+                        "status": "success",
+                        "message": f"Imported {len(cookies)} cookies from {path.name}.",
+                    }
+                )
+            )
         except json.JSONDecodeError:
             axi_error("Invalid JSON in cookies file.", "File must contain valid JSON.")
         return
 
     if args.logout:
         from reddit_mcp_server.session_state import clear_cookies
+
         clear_cookies()
-        print(_toon_object({"status": "success", "message": "Logged out. Cookies cleared."}))
+        print(
+            _toon_object(
+                {"status": "success", "message": "Logged out. Cookies cleared."}
+            )
+        )
         return
 
     if args.status:
         from reddit_mcp_server.bootstrap import initialize_bootstrap
         from reddit_mcp_server.authentication import get_auth_status
+
         initialize_bootstrap()  # loads REDDIT_COOKIES env var if present
         status = get_auth_status()
         print(_toon_object({"status": "ok", "auth": status}))
@@ -367,7 +560,7 @@ def main():
     if len(sys.argv) == 1:
         if interactive:
             # Interactive terminal: show home view (CLI mode)
-            show_home_view()
+            show_home_view(extra_fields)
             return
         # Pipe from MCP client (e.g. Claude Desktop): start server
         mcp.run(transport="stdio", show_banner=False)

@@ -5,11 +5,23 @@ from reddit_mcp_server.error_handler import handle_api_error
 
 def register_engagement_tools(mcp: FastMCP) -> None:
     @mcp.tool()
-    async def report(thing_id: str, reason: str = "", rule_reason: str = "", site_reason: str = "", other_reason: str = "") -> dict:
+    async def report(
+        thing_id: str,
+        reason: str = "",
+        rule_reason: str = "",
+        site_reason: str = "",
+        other_reason: str = "",
+    ) -> dict:
         """Report a post or comment to subreddit moderators. thing_id: t3_xxx or t1_xxx. Provide at least one reason field."""
         try:
             client = await get_reddit_client()
-            await client.report(thing_id, reason=reason, rule_reason=rule_reason, site_reason=site_reason, other_reason=other_reason)
+            await client.report(
+                thing_id,
+                reason=reason,
+                rule_reason=rule_reason,
+                site_reason=site_reason,
+                other_reason=other_reason,
+            )
             return {"ok": True, "action": "reported", "id": thing_id}
         except Exception as e:
             handle_api_error(e)
@@ -20,7 +32,7 @@ def register_engagement_tools(mcp: FastMCP) -> None:
         try:
             client = await get_reddit_client()
             await client.block_user(username)
-            return {"ok": True, "action": "blocked", "user": username}
+            return {"ok": True, "action": "blocked", "username": username}
         except Exception as e:
             handle_api_error(e)
 
@@ -30,7 +42,11 @@ def register_engagement_tools(mcp: FastMCP) -> None:
         try:
             client = await get_reddit_client()
             await client.follow_post(thing_id, follow)
-            return {"ok": True, "action": "followed" if follow else "unfollowed", "id": thing_id}
+            return {
+                "ok": True,
+                "action": "followed" if follow else "unfollowed",
+                "id": thing_id,
+            }
         except Exception as e:
             handle_api_error(e)
 
@@ -40,7 +56,11 @@ def register_engagement_tools(mcp: FastMCP) -> None:
         try:
             client = await get_reddit_client()
             await client.sendreplies(thing_id, state)
-            return {"ok": True, "action": "replies_enabled" if state else "replies_disabled", "id": thing_id}
+            return {
+                "ok": True,
+                "action": "replies_enabled" if state else "replies_disabled",
+                "id": thing_id,
+            }
         except Exception as e:
             handle_api_error(e)
 

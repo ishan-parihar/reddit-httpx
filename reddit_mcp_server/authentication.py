@@ -3,6 +3,7 @@ from reddit_mcp_server.logging_config import logger
 
 REQUIRED_COOKIES = ["reddit_session"]
 
+
 def validate_session() -> bool:
     cookies = load_cookies()
     if not cookies:
@@ -14,6 +15,7 @@ def validate_session() -> bool:
                 logger.warning(f"Missing required cookie: {name}")
                 return False
     return True
+
 
 def get_auth_status() -> dict:
     cookies = load_cookies()

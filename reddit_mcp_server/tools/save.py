@@ -1,7 +1,6 @@
 from fastmcp import FastMCP
 from reddit_mcp_server.dependencies import get_reddit_client
 from reddit_mcp_server.error_handler import handle_api_error
-from reddit_mcp_server.normalizer import normalize_listing
 
 
 def register_save_tools(mcp: FastMCP) -> None:
