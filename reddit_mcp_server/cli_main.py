@@ -228,7 +228,8 @@ def list_tools_and_exit(fields: list[str] | None = None) -> None:
         row = [name, desc]
         print(f"  {','.join(row)}")
     print()
-    print("help[2]:")
+    print("help[3]:")
+    print("  Run `reddit-httpx <tool> [args]` to call a tool directly")
     print("  Run `reddit-httpx --tool-info <name>` for details")
     print("  Run `reddit-httpx` to start the MCP server")
     sys.exit(0)
@@ -384,6 +385,7 @@ def show_help() -> None:
     print()
     print("Usage:")
     print("  reddit-httpx                    Show home view with live state")
+    print("  reddit-httpx <tool> [args]      Call a tool directly (see examples)")
     print("  reddit-httpx --list-tools       List all available MCP tools")
     print("  reddit-httpx --tool-info <name> Show details for a specific tool")
     print("  reddit-httpx --login            Import cookies from browser")
@@ -392,6 +394,7 @@ def show_help() -> None:
     print("  reddit-httpx --status           Check authentication status")
     print("  reddit-httpx --fields <fields>  Comma-separated extra fields for lists")
     print("  reddit-httpx --full            Show complete text fields (no truncation)")
+    print("  reddit-httpx --toon            Render tool results in TOON format")
     print("  reddit-httpx --help             Show this help message")
     print()
     print("Environment:")
@@ -399,14 +402,130 @@ def show_help() -> None:
     print("  REDDIT_MCP_LOG_LEVEL  Log level: DEBUG, INFO, WARNING, ERROR")
     print()
     print("Examples:")
+    print("  reddit-httpx browse_subreddit --subreddit python --limit 5")
+    print("  reddit-httpx browse_subreddit python --limit 5   # positional shorthand")
+    print("  reddit-httpx search_posts --query 'rust lang' --limit 3")
+    print("  reddit-httpx get_post --post_id_or_url 1unctej")
+    print("  reddit-httpx vote --thing_id t3_1unctej --direction up")
+    print("  reddit-httpx get_my_subreddits --limit 5 --toon")
     print("  reddit-httpx --tool-info search_posts")
     print("  reddit-httpx --list-tools")
-    print("  reddit-httpx --list-tools --fields cookies")
     print("  reddit-httpx --login")
-    print("  reddit-httpx --cookies-file ~/reddit-cookies.json")
+
+
+def run_tool_direct(tool_name: str, args: list[str], toon: bool = False) -> None:
+    """Execute a tool directly from CLI without MCP protocol."""
+    import asyncio
+    from reddit_mcp_server.server import create_mcp_server
+    from reddit_mcp_server.bootstrap import initialize_bootstrap
+
+    # Parse --key value pairs into a dict
+    kwargs = {}
+    positional = []
+    i = 0
+    while i < len(args):
+        arg = args[i]
+        if arg.startswith("--"):
+            key = arg[2:]
+            if i + 1 < len(args) and not args[i + 1].startswith("--"):
+                kwargs[key] = args[i + 1]
+                i += 2
+            else:
+                kwargs[key] = "true"
+                i += 1
+        else:
+            positional.append(arg)
+            i += 1
+
+    # Get tool object
+    mcp = create_mcp_server()
+    tools = asyncio.run(mcp.list_tools())
+    tool = next((t for t in tools if t.name == tool_name), None)
+    if not tool:
+        valid = sorted(t.name for t in tools)
+        axi_error(f"Unknown tool: '{tool_name}'", f"Valid tools: {', '.join(valid)}")
+
+    # Map positional args to required params
+    schema = tool.parameters or {}
+    props = schema.get("properties", {})
+    required = schema.get("required", [])
+    required_params = [p for p in required if p in props]
+
+    for idx, val in enumerate(positional):
+        if idx < len(required_params):
+            kwargs[required_params[idx]] = val
+        else:
+            axi_error(
+                f"Unexpected positional arg: '{val}'",
+                f"Tool `{tool_name}` expects: {', '.join(required_params)}",
+            )
+
+    # Type coercion from schema
+    for key, val in list(kwargs.items()):
+        if key in props:
+            prop = props[key]
+            prop_type = prop.get("type", "string")
+            try:
+                if prop_type == "integer":
+                    kwargs[key] = int(val)
+                elif prop_type == "number":
+                    kwargs[key] = float(val)
+                elif prop_type == "boolean":
+                    kwargs[key] = val.lower() in ("true", "1", "yes")
+            except (ValueError, TypeError):
+                axi_error(
+                    f"Invalid value for `{key}`: '{val}' (expected {prop_type})",
+                    f"Tool `{tool_name}` parameter `{key}` expects type {prop_type}",
+                )
+
+    # Initialize bootstrap (loads cookies)
+    initialize_bootstrap()
+
+    # Call the tool
+    try:
+        result = asyncio.run(tool.fn(**kwargs))
+    except SystemExit:
+        raise
+    except TypeError as e:
+        # Catch missing required args (e.g. "missing 1 required positional argument")
+        axi_error(
+            f"Tool `{tool_name}` missing required argument",
+            f"Run `reddit-httpx --tool-info {tool_name}` to see required parameters",
+        )
+    except Exception as e:
+        axi_error(f"Tool `{tool_name}` failed: {e}")
+
+    # Output
+    if toon:
+        if isinstance(result, dict):
+            print(_toon_object(result))
+        else:
+            print(result)
+    else:
+        print(json.dumps(result, indent=2))
 
 
 def main():
+    global FULL_OUTPUT
+    # ── Direct tool invocation: reddit-httpx <tool_name> [args...] ──────
+    # Intercept before argparse so tool names aren't parsed as flags.
+    if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
+        tool_name = sys.argv[1]
+        tool_names = [t[0] for t in _get_tools()]
+        if tool_name in tool_names:
+            # Filter out CLI-only flags, keep tool args
+            toon = "--toon" in sys.argv
+            if "--full" in sys.argv:
+                FULL_OUTPUT = True
+            remaining = [a for a in sys.argv[2:] if a not in ("--toon", "--full")]
+            run_tool_direct(tool_name, remaining, toon)
+            return
+        # Looks like a tool name but doesn't match — fail early with valid list
+        axi_error(
+            f"Unknown tool: '{tool_name}'",
+            f"Valid tools: {', '.join(tool_names)}",
+        )
+
     parser = argparse.ArgumentParser(description="Reddit MCP Server", add_help=False)
     parser.add_argument(
         "--login", action="store_true", help="Import cookies from browser"
@@ -452,6 +571,11 @@ def main():
     parser.add_argument(
         "--port", type=int, default=8000, help="Port for HTTP transport"
     )
+    parser.add_argument(
+        "--toon",
+        action="store_true",
+        help="Render tool results in TOON format instead of JSON",
+    )
     parser.add_argument("--help", "-h", action="store_true", help="Show help message")
     args, unknown = parser.parse_known_args()
 
@@ -467,7 +591,6 @@ def main():
         extra_fields = [f.strip() for f in args.fields.split(",") if f.strip()]
 
     # AXI §3: --full bypasses text truncation in normalizer
-    global FULL_OUTPUT
     if args.full:
         FULL_OUTPUT = True
 
