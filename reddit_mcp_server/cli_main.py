@@ -79,6 +79,72 @@ def _toon_object(fields: dict) -> str:
     return "\n".join(lines)
 
 
+# AXI §2: minimal default schemas — 4 fields max for list outputs in TOON
+_COMPACT_FIELDS = {
+    "post": ["id", "title", "score", "num_comments"],
+    "comment": ["id", "author", "body", "score"],
+    "subreddit": ["name", "display_name", "subscribers"],
+    "user": ["name", "link_karma", "comment_karma"],
+    "message": ["id", "author", "subject", "was_read"],
+}
+
+_COMPACT_FALLBACK = 4  # default: first 4 keys if type unknown
+
+
+def _detect_item_type(items: list[dict]) -> str | None:
+    """Heuristically detect item type from first item's keys."""
+    if not items or not isinstance(items[0], dict):
+        return None
+    keys = set(items[0].keys())
+    if "title" in keys and "num_comments" in keys:
+        return "post"
+    if "depth" in keys or ("body" in keys and "parent_id" in keys):
+        return "comment"
+    if "subscribers" in keys:
+        return "subreddit"
+    if "link_karma" in keys:
+        return "user"
+    if "subject" in keys and "was_read" in keys:
+        return "message"
+    return None
+
+
+def _compact_result(result: dict) -> dict:
+    """Reduce list items to minimal field sets for TOON output (AXI §2)."""
+    if not isinstance(result, dict) or "items" not in result:
+        return result
+    items = result["items"]
+    if not isinstance(items, list) or not items or not isinstance(items[0], dict):
+        # AXI §5: definitive empty state — replace empty items with count
+        if isinstance(items, list) and len(items) == 0:
+            result = dict(result)
+            result["items"] = []  # keep for TOON table header
+        return result
+
+    item_type = _detect_item_type(items)
+    fields = _COMPACT_FIELDS.get(item_type) or list(items[0].keys())[:_COMPACT_FALLBACK]
+
+    compact_items = []
+    for item in items:
+        compact_items.append({k: item[k] for k in fields if k in item})
+    result = dict(result)  # shallow copy
+    result["items"] = compact_items
+    return result
+
+
+def _has_truncation(result: dict) -> bool:
+    """Check if any item in result has truncation markers (_chars fields)."""
+    if not isinstance(result, dict):
+        return False
+    for item in result.get("items", []):
+        if isinstance(item, dict) and any(k.endswith("_chars") for k in item):
+            return True
+    for key in result:
+        if key.endswith("_chars"):
+            return True
+    return False
+
+
 def _truncate(s: str, max_chars: int = 60) -> str:
     """Truncate string with ellipsis (AXI §3)."""
     if len(s) <= max_chars:
@@ -394,7 +460,7 @@ def show_help() -> None:
     print("  reddit-httpx --status           Check authentication status")
     print("  reddit-httpx --fields <fields>  Comma-separated extra fields for lists")
     print("  reddit-httpx --full            Show complete text fields (no truncation)")
-    print("  reddit-httpx --toon            Render tool results in TOON format")
+    print("  reddit-httpx --json            Render tool results as JSON (default is TOON)")
     print("  reddit-httpx --help             Show this help message")
     print()
     print("Environment:")
@@ -407,13 +473,13 @@ def show_help() -> None:
     print("  reddit-httpx search_posts --query 'rust lang' --limit 3")
     print("  reddit-httpx get_post --post_id_or_url 1unctej")
     print("  reddit-httpx vote --thing_id t3_1unctej --direction up")
-    print("  reddit-httpx get_my_subreddits --limit 5 --toon")
+    print("  reddit-httpx get_my_subreddits --limit 5 --json")
     print("  reddit-httpx --tool-info search_posts")
     print("  reddit-httpx --list-tools")
     print("  reddit-httpx --login")
 
 
-def run_tool_direct(tool_name: str, args: list[str], toon: bool = False) -> None:
+def run_tool_direct(tool_name: str, args: list[str], use_json: bool = False) -> None:
     """Execute a tool directly from CLI without MCP protocol."""
     import asyncio
     from reddit_mcp_server.server import create_mcp_server
@@ -496,13 +562,33 @@ def run_tool_direct(tool_name: str, args: list[str], toon: bool = False) -> None
         axi_error(f"Tool `{tool_name}` failed: {e}")
 
     # Output
-    if toon:
-        if isinstance(result, dict):
-            print(_toon_object(result))
-        else:
-            print(result)
-    else:
+    if use_json:
         print(json.dumps(result, indent=2))
+    else:
+        # AXI §1: TOON is default, §2: compact schemas for lists
+        compact = _compact_result(result)
+        # AXI §5: definitive empty state — message instead of empty table
+        count = compact.get("count", 0) if isinstance(compact, dict) else 0
+        if isinstance(compact, dict) and "items" in compact and count == 0:
+            tool_label = tool_name.replace("_", " ")
+            print(f"items: 0 {tool_label} results found")
+        else:
+            print(_toon_object(compact))
+        # AXI §3: hint when content was truncated
+        if _has_truncation(compact):
+            print(_toon_kv("help", f"Run `reddit-httpx {tool_name} --full` to see complete text"))
+        # AXI §9: contextual next-step hints (only for lists with items)
+        if isinstance(compact, dict) and "items" in compact and count > 0:
+            next_cursor = compact.get("next")
+            hints = []
+            if next_cursor:
+                hints.append(f"More results available — pass the `next` cursor to paginate")
+            if count < 10:
+                hints.append(f"Showing all {count} results")
+            if hints:
+                print(f"help[{len(hints)}]:")
+                for h in hints:
+                    print(f"  {h}")
 
 
 def main():
@@ -514,11 +600,11 @@ def main():
         tool_names = [t[0] for t in _get_tools()]
         if tool_name in tool_names:
             # Filter out CLI-only flags, keep tool args
-            toon = "--toon" in sys.argv
+            use_json = "--json" in sys.argv
             if "--full" in sys.argv:
                 FULL_OUTPUT = True
-            remaining = [a for a in sys.argv[2:] if a not in ("--toon", "--full")]
-            run_tool_direct(tool_name, remaining, toon)
+            remaining = [a for a in sys.argv[2:] if a not in ("--json", "--full")]
+            run_tool_direct(tool_name, remaining, use_json=use_json)
             return
         # Looks like a tool name but doesn't match — fail early with valid list
         axi_error(
@@ -572,9 +658,9 @@ def main():
         "--port", type=int, default=8000, help="Port for HTTP transport"
     )
     parser.add_argument(
-        "--toon",
+        "--json",
         action="store_true",
-        help="Render tool results in TOON format instead of JSON",
+        help="Render tool results as JSON instead of default TOON format",
     )
     parser.add_argument("--help", "-h", action="store_true", help="Show help message")
     args, unknown = parser.parse_known_args()
