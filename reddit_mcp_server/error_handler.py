@@ -9,6 +9,15 @@ def raise_tool_error(message: str, cause: Exception | None = None) -> None:
 
 def handle_api_error(e: Exception) -> None:
     if isinstance(e, AuthenticationError):
+        # Best-effort: invalidate cached client so next call re-reads cookies.
+        # If the user re-logged in externally, the next tool call picks it up.
+        import asyncio
+        try:
+            from reddit_mcp_server.dependencies import refresh_client
+            loop = asyncio.get_running_loop()
+            loop.create_task(refresh_client())
+        except Exception:
+            pass
         raise_tool_error(
             "Session expired. Run `reddit-httpx --login` to re-authenticate.", e
         )

@@ -1,7 +1,7 @@
 import os
 import json
 from reddit_mcp_server.session_state import load_cookies, save_cookies
-from reddit_mcp_server.authentication import validate_session
+from reddit_mcp_server.authentication import validate_session, validate_write_session
 from reddit_mcp_server.logging_config import logger
 
 
@@ -28,5 +28,10 @@ def ensure_ready_or_raise() -> dict[str, str]:
     if not validate_session():
         raise RuntimeError(
             "Session invalid. Run `reddit-httpx --login` to re-authenticate."
+        )
+    if not validate_write_session():
+        logger.warning(
+            "reddit_session cookie missing — write operations (vote, send, hide) will fail. "
+            "Read-only operations work with token_v2. Re-login to restore full access."
         )
     return cookies

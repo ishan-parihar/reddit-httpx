@@ -21,6 +21,15 @@ async def get_reddit_client():
     return _client
 
 
+async def refresh_client():
+    """Invalidate cached client so next get_reddit_client() re-reads cookies."""
+    global _client
+    if _client is not None:
+        await _client.close()
+    _client = None
+    logger.info("Reddit API client reset — will re-read cookies on next call")
+
+
 def reset_client():
     global _client
     if _client is not None:

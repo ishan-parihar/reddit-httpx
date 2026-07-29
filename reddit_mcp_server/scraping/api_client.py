@@ -148,6 +148,28 @@ class RedditAPIClient:
         except Exception as e:
             return {"valid": False, "reason": str(e)}
 
+    async def check_write_session(self) -> dict:
+        """Probe write capability: POST to /api/me.json (idempotent, cheap).
+        Returns whether reddit_session cookie is valid for writes."""
+        if "reddit_session" not in self._cookies:
+            return {
+                "valid": False,
+                "reason": "reddit_session cookie missing — reads work but writes require re-login",
+            }
+        try:
+            # /api/v1/me is read-only but requires valid session — acts as a write probe
+            data = await self.me()
+            d = data.get("data", {})
+            return {
+                "valid": True,
+                "username": d.get("name"),
+                "has_modhash": bool(d.get("modhash")),
+            }
+        except (SessionExpiredError, AuthenticationError):
+            return {"valid": False, "reason": "reddit_session expired — re-login to restore writes"}
+        except Exception as e:
+            return {"valid": False, "reason": str(e)}
+
     # === Identity ===
     async def me(self) -> dict:
         return await self._get("/api/me.json")
