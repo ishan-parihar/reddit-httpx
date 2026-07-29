@@ -91,7 +91,16 @@ MAX_TEXT_LENGTH = 500
 
 
 def _truncate_text(text: str, key: str, out: dict) -> None:
-    """Truncate text field if too long. Sets out[key] in-place."""
+    """Truncate text field if too long. Sets out[key] in-place.
+    Respects --full flag: when FULL_OUTPUT is True, skip truncation (AXI §3)."""
+    try:
+        from reddit_mcp_server.cli_main import FULL_OUTPUT
+    except ImportError:
+        FULL_OUTPUT = False
+
+    if FULL_OUTPUT:
+        out[key] = text
+        return
     if not isinstance(text, str) or len(text) <= MAX_TEXT_LENGTH:
         out[key] = text
     else:

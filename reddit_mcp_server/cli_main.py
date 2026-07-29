@@ -3,6 +3,10 @@ import os
 import sys
 import argparse
 
+# ── AXI §3: --full flag controls text truncation in normalizer ────────────
+FULL_OUTPUT = False  # Set True via --full to bypass truncation (AXI §3)
+
+
 # ── TOON output helpers (AXI §1) ──────────────────────────────────────────
 
 
@@ -263,6 +267,8 @@ def tool_info_and_exit(tool_name: str) -> None:
                         )
                     fields["params"] = params
             print(_toon_object(fields))
+            # AXI §9: Contextual next-step after detail view
+            print(f"help[1]: Run `reddit-httpx` to start the MCP server and call `{tool.name}`")
         else:
             valid = sorted([t.name for t in tools_obj])
             axi_error(
@@ -385,6 +391,7 @@ def show_help() -> None:
     print("  reddit-httpx --logout           Clear stored session")
     print("  reddit-httpx --status           Check authentication status")
     print("  reddit-httpx --fields <fields>  Comma-separated extra fields for lists")
+    print("  reddit-httpx --full            Show complete text fields (no truncation)")
     print("  reddit-httpx --help             Show this help message")
     print()
     print("Environment:")
@@ -432,6 +439,11 @@ def main():
         help="Install session hook for ambient context (Claude Code, Codex, OpenCode)",
     )
     parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Show complete text fields without truncation (AXI §3)",
+    )
+    parser.add_argument(
         "--transport",
         choices=["stdio", "streamable-http"],
         default="stdio",
@@ -453,6 +465,11 @@ def main():
     extra_fields = []
     if args.fields:
         extra_fields = [f.strip() for f in args.fields.split(",") if f.strip()]
+
+    # AXI §3: --full bypasses text truncation in normalizer
+    global FULL_OUTPUT
+    if args.full:
+        FULL_OUTPUT = True
 
     if args.help:
         show_help()
@@ -531,6 +548,24 @@ def main():
         initialize_bootstrap()  # loads REDDIT_COOKIES env var if present
         status = get_auth_status()
         print(_toon_object({"status": "ok", "auth": status}))
+        # AXI §9: Contextual hints based on auth state
+        mode = status.get("mode", "none")
+        hints = []
+        if mode == "full":
+            hints.append("Session ready — reads and writes supported")
+        elif mode == "reads_only":
+            hints.append("Writes blocked: reddit_session cookie missing")
+            hints.append("Run `reddit-httpx --login` to restore full access")
+        elif mode == "degraded":
+            hints.append("Writes may fail: token_v2 cookie missing")
+            hints.append("Run `reddit-httpx --login` to restore full access")
+        else:
+            hints.append("Not authenticated")
+            hints.append("Run `reddit-httpx --login` or `reddit-httpx --cookies-file <path>`")
+        if hints:
+            print(f"help[{len(hints)}]:")
+            for h in hints:
+                print(f"  {h}")
         return
 
     # Detect interactive vs MCP-client invocation early so we can suppress
