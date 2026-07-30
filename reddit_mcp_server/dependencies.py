@@ -1,43 +1,138 @@
 from reddit_mcp_server.bootstrap import ensure_ready_or_raise
 from reddit_mcp_server.logging_config import logger
+from reddit_mcp_server.obscura_integration import (
+    get_valid_reddit_cookies,
+    get_write_reddit_cookies,
+    force_reddit_cookie_refresh,
+    invalidate_reddit_auth,
+)
+from reddit_mcp_server.scraping.api_client import RedditAPIClient
+from reddit_mcp_server.exceptions import SessionExpiredError, AuthenticationError
 
 _client = None
+_client_cookies_hash = None
+
+
+def _cookies_hash(cookies: dict[str, str]) -> str:
+    """Generate a hash of cookies to detect changes."""
+    import hashlib
+    # Only hash the important cookies
+    important = {k: v for k, v in cookies.items() if k in ("token_v2", "reddit_session", "csrf_token")}
+    return hashlib.sha256(str(sorted(important.items())).encode()).hexdigest()[:16]
 
 
 async def get_reddit_client():
-    global _client
-    if _client is None:
-        cookies = ensure_ready_or_raise()
-        from reddit_mcp_server.scraping.api_client import RedditAPIClient
-
-        _client = RedditAPIClient(cookies)
-        logger.info("Reddit API client initialized")
-        # Validate session on first init
-        health = await _client.check_session()
-        if not health.get("valid"):
-            logger.warning(
-                f"Session health check failed: {health.get('reason', 'unknown')}"
+    """Get Reddit API client with auto-refreshing cookies."""
+    global _client, _client_cookies_hash
+    
+    # Get valid cookies (auto-validates and re-extracts if needed)
+    result = await get_valid_reddit_cookies()
+    
+    if not result.valid:
+        # Cookies are invalid, try to force refresh
+        logger.warning(f"Cookie validation failed: {result.error}")
+        result = await force_reddit_cookie_refresh()
+        
+        if not result.valid:
+            raise SessionExpiredError(
+                f"Reddit session expired: {result.error}. "
+                "Run 'reddit-httpx --login' to re-authenticate."
             )
+    
+    # Check if cookies have changed since last client creation
+    new_hash = _cookies_hash(result.cookies)
+    if _client is not None and _client_cookies_hash == new_hash:
+        return _client
+    
+    # Create new client with fresh cookies
+    if _client is not None:
+        await _client.close()
+    
+    _client = RedditAPIClient(result.cookies)
+    _client_cookies_hash = new_hash
+    logger.info(f"Reddit API client initialized (source: {result.source.value})")
+    
+    # Validate session on first init
+    health = await _client.check_session()
+    if not health.get("valid"):
+        logger.warning(f"Session health check failed: {health.get('reason', 'unknown')}")
+        # Try one more time with forced refresh
+        result = await force_reddit_cookie_refresh()
+        if result.valid:
+            await _client.close()
+            _client = RedditAPIClient(result.cookies)
+            _client_cookies_hash = _cookies_hash(result.cookies)
+            logger.info("Reddit API client re-initialized after forced refresh")
+        else:
+            raise SessionExpiredError(
+                "Reddit session expired after forced refresh. "
+                "Run 'reddit-httpx --login' to re-authenticate."
+            )
+    
+    return _client
+
+
+async def get_write_reddit_client():
+    """Get Reddit API client validated for write operations."""
+    global _client, _client_cookies_hash
+    
+    # Get cookies valid for writes
+    result = await get_write_reddit_cookies()
+    
+    if not result.valid:
+        logger.warning(f"Write cookie validation failed: {result.error}")
+        result = await force_reddit_cookie_refresh()
+        
+        if not result.valid or "reddit_session" not in result.cookies:
+            raise SessionExpiredError(
+                f"Reddit write session expired: {result.error}. "
+                "Run 'reddit-httpx --login' to re-authenticate for write access."
+            )
+    
+    # Check if cookies have changed
+    new_hash = _cookies_hash(result.cookies)
+    if _client is not None and _client_cookies_hash == new_hash:
+        return _client
+    
+    # Create new client
+    if _client is not None:
+        await _client.close()
+    
+    _client = RedditAPIClient(result.cookies)
+    _client_cookies_hash = new_hash
+    logger.info(f"Reddit write API client initialized (source: {result.source.value})")
+    
     return _client
 
 
 async def refresh_client():
-    """Invalidate cached client so next get_reddit_client() re-reads cookies."""
-    global _client
+    """Invalidate cached client so next call re-reads and validates cookies."""
+    global _client, _client_cookies_hash
     if _client is not None:
         await _client.close()
     _client = None
-    logger.info("Reddit API client reset — will re-read cookies on next call")
+    _client_cookies_hash = None
+    logger.info("Reddit API client reset — will re-read and validate cookies on next call")
 
 
 def reset_client():
-    global _client
+    """Synchronous reset for non-async contexts."""
+    global _client, _client_cookies_hash
     if _client is not None:
         import asyncio
-
         try:
             loop = asyncio.get_running_loop()
             loop.create_task(_client.close())
         except RuntimeError:
-            pass  # no event loop running (e.g. during tests)
+            pass  # no event loop running
     _client = None
+    _client_cookies_hash = None
+
+
+async def handle_auth_error(error: Exception) -> None:
+    """Handle authentication errors by triggering cookie refresh."""
+    if isinstance(error, (SessionExpiredError, AuthenticationError)):
+        logger.warning(f"Auth error detected, forcing cookie refresh: {error}")
+        await force_reddit_cookie_refresh()
+    else:
+        raise
