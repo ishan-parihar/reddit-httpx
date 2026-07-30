@@ -443,6 +443,107 @@ def install_session_hook() -> None:
     sys.exit(0)
 
 
+def install_agent_skill() -> None:
+    """Create installable agent skill from home view (AXI §7)."""
+    from pathlib import Path
+
+    bin_path = _get_bin_path()
+    skill_dir = Path.home() / ".claude" / "skills" / "reddit-httpx"
+    skill_dir.mkdir(parents=True, exist_ok=True)
+
+    skill_content = """name: Reddit MCP Server
+description: Reddit automation with browsing, posting, commenting, voting, and moderation features
+triggers:
+  - "reddit post"
+  - "reddit search"
+  - "reddit comment"
+  - "reddit automation"
+  - "social media posting"
+  - "content creation"
+  - "subreddit"
+
+## Overview
+Reddit MCP Server provides comprehensive Reddit automation:
+- Browse posts, comments, and subreddits
+- Search posts, users, and subreddits
+- Post and comment
+- Vote and save content
+- User profiles and karma
+- Moderation tools
+
+## Quick Start
+```bash
+# Show home view with live state
+reddit-httpx
+
+# Import browser cookies
+reddit-httpx --login
+
+# Check session status
+reddit-httpx --status
+
+# List available tools
+reddit-httpx --list-tools
+
+# Start MCP server
+reddit-httpx
+```
+
+## MCP Tools
+- `browse_subreddit` - Browse posts from a subreddit
+- `browse_frontpage` - Browse the personalized frontpage
+- `browse_popular` - Browse r/popular
+- `search_posts` - Search Reddit posts
+- `search_subreddits` - Search for subreddits
+- `search_users` - Search for Reddit users
+- `get_post` - Get a post's details and comment tree
+- `get_comments` - Get comments for a post
+- `get_user_profile` - Get a Reddit user's profile
+- `get_user_posts` - Get a user's recent posts
+- `get_user_comments` - Get a user's recent comments
+- `get_my_profile` - Get the authenticated user's profile
+- `vote` - Vote on a post or comment
+- `save_post` - Save a post
+- `submit_post` - Submit a new post
+- `submit_comment` - Submit a new comment
+
+## Session Integration
+Install session hooks for ambient context:
+```bash
+reddit-httpx --install-hook
+```
+
+This shows Reddit session state on every agent session start.
+
+## Output Formats
+- `--toon` - TOON format (default, token-efficient)
+- `--json` - JSON format
+- `--full` - Show complete text fields (no truncation)
+- `--fields <fields>` - Comma-separated extra fields for lists
+
+## Examples
+```bash
+# Browse a subreddit
+reddit-httpx browse_subreddit --subreddit python --limit 5
+
+# Search posts
+reddit-httpx search_posts --query "rust lang" --limit 3
+
+# Get post details
+reddit-httpx get_post --post_id_or_url 1unctej
+
+# Vote on a post
+reddit-httpx vote --thing_id t3_1unctej --direction up
+```
+"""
+
+    skill_file = skill_dir / "SKILL.md"
+    skill_file.write_text(skill_content)
+
+    print(_toon_object({"status": "success", "skill_path": str(skill_file), "help": "Agent skill installed - will load automatically on Reddit-related tasks"}))
+    sys.exit(0)
+
+
 def show_help() -> None:
 
     """Show usage information (AXI §10)."""
@@ -644,6 +745,11 @@ def main():
         help="Install session hook for ambient context (Claude Code, Codex, OpenCode)",
     )
     parser.add_argument(
+        "--install-skill",
+        action="store_true",
+        help="Create installable agent skill for Claude Code (AXI §7)",
+    )
+    parser.add_argument(
         "--full",
         action="store_true",
         help="Show complete text fields without truncation (AXI §3)",
@@ -686,6 +792,10 @@ def main():
 
     if args.install_hook:
         install_session_hook()
+        return
+
+    if args.install_skill:
+        install_agent_skill()
         return
 
     if args.list_tools:
