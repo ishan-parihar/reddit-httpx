@@ -12,6 +12,7 @@ dependencies = [
     "curl_cffi>=0.7.0",
     "python-dotenv>=1.1.1",
     "inquirer>=3.4.0",
+    "obscura-cookie-manager @ git+https://github.com/ishan-parihar/obscura-cookie-manager.git",
 ]
 
 [project.optional-dependencies]
