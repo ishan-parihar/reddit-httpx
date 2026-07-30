@@ -77,6 +77,7 @@ class RedditObscuraManager:
                 extractor=self._get_extractor(),
                 validator=self._validator.validate,
                 required_cookies=REDDIT_REQUIRED_COOKIES,
+                domain="reddit.com",
                 validation_interval=300,  # 5 minutes
                 max_re_extraction_attempts=3,
                 re_extraction_cooldown=60,
