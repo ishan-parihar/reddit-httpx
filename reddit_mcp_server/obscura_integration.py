@@ -12,7 +12,7 @@ from typing import Any, Optional
 from obscura_cookie_manager import (
     ObscuraCookieManager,
     FileCookieStorage,
-    BrowserCookie3Extractor,
+    BrowserCookieExtractor,
     CookieSource,
     CookieValidationResult,
     ReLoginRequiredError,
@@ -64,10 +64,14 @@ class RedditObscuraManager:
         """Get file-based cookie storage."""
         return FileCookieStorage(get_cookies_path())
     
-    def _get_extractor(self) -> BrowserCookie3Extractor:
+    def _get_extractor(self) -> BrowserCookieExtractor:
         """Get browser cookie extractor (prefers Zen, then Brave)."""
         # Try Zen first (Firefox-based, unencrypted cookies)
-        return BrowserCookie3Extractor("zen")
+        return BrowserCookieExtractor(
+            domain="reddit.com",
+            required_cookies=REDDIT_REQUIRED_COOKIES,
+            preferred_browsers=["zen", "brave", "chrome", "firefox"]
+        )
     
     def _get_manager(self) -> ObscuraCookieManager:
         """Get or create the ObscuraCookieManager instance."""
@@ -77,7 +81,6 @@ class RedditObscuraManager:
                 extractor=self._get_extractor(),
                 validator=self._validator.validate,
                 required_cookies=REDDIT_REQUIRED_COOKIES,
-                domain="reddit.com",
                 validation_interval=300,  # 5 minutes
                 max_re_extraction_attempts=3,
                 re_extraction_cooldown=60,
