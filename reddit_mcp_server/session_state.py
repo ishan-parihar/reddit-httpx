@@ -14,7 +14,7 @@ def get_profile_dir() -> Path:
 
 
 def _migrate_if_needed() -> None:
-    """One-time migration: copy cookies from ~/.reddit-mcp/ to ~/.reddit-lyr/ if needed."""
+    """One-time migration: copy cookies from ~/.reddit-httpx/ to ~/.reddit-lyr/ if needed."""
     old = Path(OLD_PROFILE_DIR).expanduser() / COOKIES_FILE
     new = get_profile_dir() / COOKIES_FILE
     if old.exists() and not new.exists():
