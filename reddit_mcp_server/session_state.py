@@ -4,7 +4,7 @@ import shutil
 from pathlib import Path
 from reddit_mcp_server.constants import DEFAULT_PROFILE_DIR, COOKIES_FILE
 
-OLD_PROFILE_DIR = "~/.reddit-mcp"
+OLD_PROFILE_DIR = "~/.reddit-httpx"
 
 
 def get_profile_dir() -> Path:
@@ -14,7 +14,7 @@ def get_profile_dir() -> Path:
 
 
 def _migrate_if_needed() -> None:
-    """One-time migration: copy cookies from ~/.reddit-mcp/ to ~/.reddit-httpx/ if needed."""
+    """One-time migration: copy cookies from ~/.reddit-mcp/ to ~/.reddit-lyr/ if needed."""
     old = Path(OLD_PROFILE_DIR).expanduser() / COOKIES_FILE
     new = get_profile_dir() / COOKIES_FILE
     if old.exists() and not new.exists():
