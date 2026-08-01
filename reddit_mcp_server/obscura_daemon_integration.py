@@ -8,8 +8,7 @@ import logging
 import os
 from typing import Optional
 
-from obscura_daemon import ObscuraPlugin
-from obscura_cookie_manager import CookieValidationResult
+from obscura_core import ObscuraPlugin, CookieValidationResult
 
 logger = logging.getLogger(__name__)
 
@@ -54,9 +53,9 @@ class RedditDaemonManager:
                 logger.warning("No cookies found in daemon cache for reddit")
                 return CookieValidationResult(
                     valid=False,
-                    cookies={},
                     source="daemon",
-                    error_message="No cookies found in daemon cache",
+                    cookies={},
+                    error="No cookies found in daemon cache",
                 )
 
             # Validate required cookies
@@ -65,9 +64,9 @@ class RedditDaemonManager:
                     logger.debug(f"Required cookie missing: {cookie}")
                     return CookieValidationResult(
                         valid=False,
-                        cookies=cookies,
                         source="daemon",
-                        error_message=f"Required cookie missing: {cookie}",
+                        cookies=cookies,
+                        error=f"Required cookie missing: {cookie}",
                     )
 
             return CookieValidationResult(
