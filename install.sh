@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ─── reddit-httpx installer ───────────────────────────────────────────────
-# curl -sSL https://raw.githubusercontent.com/ishan-parihar/reddit-httpx/main/install.sh | bash
+# ─── reddit-lyr installer ───────────────────────────────────────────────
+# curl -sSL https://raw.githubusercontent.com/ishan-parihar/reddit-lyr/main/install.sh | bash
 #
-# Installs reddit-httpx globally using uv (preferred) or pipx/pip as fallback.
+# Installs reddit-lyr globally using uv (preferred) or pipx/pip as fallback.
 # Handles clean system setup including uv installation and dependency management.
 # ──────────────────────────────────────────────────────────────────────────
 
-REPO="https://github.com/ishan-parihar/reddit-httpx.git"
+REPO="https://github.com/ishan-parihar/reddit-lyr.git"
 REPO_GIT="git+${REPO}"
-BIN="reddit-httpx"
+BIN="reddit-lyr"
 MIN_PYTHON_VERSION="3.11"
 
 # Colors
@@ -170,7 +170,7 @@ install_pip() {
                 mkdir -p "$user_bin"
                 ln -sf "$site_bin/$BIN" "$user_bin/$BIN"
             else
-                warn "Could not locate installed binary. Check: $py -m pip show reddit-httpx-mcp"
+                warn "Could not locate installed binary. Check: $py -m pip show reddit-lyr"
                 return 0
             fi
         fi
@@ -202,7 +202,7 @@ ensure_path() {
         if [[ -n "$profile" && -w "$profile" ]]; then
             if ! grep -q "PATH.*$dir" "$profile" 2>/dev/null; then
                 echo "" >> "$profile"
-                echo "# Added by reddit-httpx installer" >> "$profile"
+                echo "# Added by reddit-lyr installer" >> "$profile"
                 echo "export PATH=\"\$HOME/.local/bin:\$PATH\"" >> "$profile"
                 info "Added PATH to $profile"
             fi
@@ -265,7 +265,7 @@ verify() {
 
 # ── Main ──────────────────────────────────────────────────────────────────
 main() {
-    info "Installing reddit-httpx..."
+    info "Installing reddit-lyr..."
     echo ""
 
     # Install system dependencies
@@ -294,7 +294,7 @@ main() {
         info "pip install complete"
     else
         err "Install failed. Try manually:"
-        err "  git clone $REPO && cd reddit-httpx && pip install -e ."
+        err "  git clone $REPO && cd reddit-lyr && pip install -e ."
         exit 1
     fi
 
