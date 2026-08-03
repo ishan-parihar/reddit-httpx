@@ -35,7 +35,9 @@ class RedditAPIClient:
 
     async def _get_session(self) -> AsyncSession:
         if self._session is None:
-            self._session = AsyncSession(impersonate="chrome")
+            # Explicit timeout — curl_cffi defaults to NO timeout, so a hung
+            # connection would block the MCP tool indefinitely.
+            self._session = AsyncSession(impersonate="chrome", timeout=30)
             for name, value in self._cookies.items():
                 self._session.cookies.set(name, value, domain=".reddit.com")
         return self._session
