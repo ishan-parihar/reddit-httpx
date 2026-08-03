@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Enable `reddit-httpx <tool_name> <args>` to call any of the 56 tools directly from the CLI without going through the MCP protocol.
+**Goal:** Enable `reddit-lyr <tool_name> <args>` to call any of the 56 tools directly from the CLI without going through the MCP protocol.
 
 **Architecture:** Intercept the first positional arg before argparse runs. If it matches a tool name, dispatch to a direct invocation path that parses `--key value` args, calls `tool.fn(**kwargs)` directly, and prints JSON output. No MCP protocol, no subprocess, no JSON-RPC — just a thin CLI-to-function bridge.
 
@@ -70,7 +70,7 @@ In `main()`, BEFORE argparse runs, check if `sys.argv[1]` matches a tool name:
 
 ```python
 def main():
-    # ── Direct tool invocation: reddit-httpx <tool_name> [args...] ──────
+    # ── Direct tool invocation: reddit-lyr <tool_name> [args...] ──────
     # Intercept before argparse so tool names aren't parsed as flags.
     if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
         tool_name = sys.argv[1]
@@ -97,7 +97,7 @@ def main():
 
 ```python
 def main():
-    # ── Direct tool invocation: reddit-httpx <tool_name> [args...] ──────
+    # ── Direct tool invocation: reddit-lyr <tool_name> [args...] ──────
     if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
         tool_name = sys.argv[1]
         tool_names = [t[0] for t in _get_tools()]
@@ -122,7 +122,7 @@ def main():
 
 - [ ] **Step 3: Verify no regression in existing CLI flags**
 
-Run: `reddit-httpx --help`, `reddit-httpx --status`, `reddit-httpx --list-tools`
+Run: `reddit-lyr --help`, `reddit-lyr --status`, `reddit-lyr --list-tools`
 Expected: All unchanged
 
 - [ ] **Step 4: Commit**
@@ -175,19 +175,24 @@ def run_tool_direct(tool_name: str, args: list[str], toon: bool = False) -> None
     tools = asyncio.run(mcp.list_tools())
     tool = next((t for t in tools if t.name == tool_name), None)
     if not tool:
-        axi_error(f"Unknown tool: '{tool_name}'", f"Run `reddit-httpx --list-tools` to see available tools")
+        axi_error(
+            f"Unknown tool: '{tool_name}'", f"Run `reddit-lyr --list-tools` to see available tools"
+        )
 
     # Map positional args to required params
     schema = tool.parameters or {}
     props = schema.get("properties", {})
     required = schema.get("required", [])
     required_params = [p for p in required if p in props]
-    
+
     for idx, val in enumerate(positional):
         if idx < len(required_params):
             kwargs[required_params[idx]] = val
         else:
-            axi_error(f"Unexpected positional arg: '{val}'", f"Tool `{tool_name}` expects: {', '.join(required_params)}")
+            axi_error(
+                f"Unexpected positional arg: '{val}'",
+                f"Tool `{tool_name}` expects: {', '.join(required_params)}",
+            )
 
     # Type coercion from schema
     for key, val in kwargs.items():
@@ -230,29 +235,29 @@ Place it after `show_help()` and before `main()`. Full implementation above.
 - [ ] **Step 2: Test basic invocation**
 
 ```bash
-reddit-httpx browse_subreddit --subreddit python --limit 2
+reddit-lyr browse_subreddit --subreddit python --limit 2
 ```
 Expected: JSON output with 2 posts from r/python
 
 - [ ] **Step 3: Test positional arg shorthand**
 
 ```bash
-reddit-httpx browse_subreddit python --limit 2
+reddit-lyr browse_subreddit python --limit 2
 ```
 Expected: Same result (first positional maps to `subreddit`)
 
 - [ ] **Step 4: Test --toon flag**
 
 ```bash
-reddit-httpx browse_subreddit --subreddit python --limit 2 --toon
+reddit-lyr browse_subreddit --subreddit python --limit 2 --toon
 ```
 Expected: TOON-formatted output instead of JSON
 
 - [ ] **Step 5: Test error handling**
 
 ```bash
-reddit-httpx nonexistent_tool foo
-reddit-httpx browse_subreddit
+reddit-lyr nonexistent_tool foo
+reddit-lyr browse_subreddit
 ```
 Expected: TOON error messages, exit code 2
 
@@ -278,36 +283,36 @@ git commit -m "feat: implement run_tool_direct() for CLI tool invocation"
 
 ```bash
 # Read operations
-reddit-httpx get_post --post_id_or_url 1unctej --limit 2
-reddit-httpx browse_subreddit --subreddit python --limit 3
-reddit-httpx browse_frontpage --limit 2
-reddit-httpx search_posts --query "python tutorial" --limit 2
-reddit-httpx search_subreddits --query "python" --limit 2
-reddit-httpx get_comments --post_id_or_url 1unctej --limit 2
-reddit-httpx get_user_profile --username spez
-reddit-httpx get_account_info
-reddit-httpx get_my_profile
-reddit-httpx get_my_subreddits --limit 3
-reddit-httpx get_inbox --limit 2
-reddit-httpx get_karma
+reddit-lyr get_post --post_id_or_url 1unctej --limit 2
+reddit-lyr browse_subreddit --subreddit python --limit 3
+reddit-lyr browse_frontpage --limit 2
+reddit-lyr search_posts --query "python tutorial" --limit 2
+reddit-lyr search_subreddits --query "python" --limit 2
+reddit-lyr get_comments --post_id_or_url 1unctej --limit 2
+reddit-lyr get_user_profile --username spez
+reddit-lyr get_account_info
+reddit-lyr get_my_profile
+reddit-lyr get_my_subreddits --limit 3
+reddit-lyr get_inbox --limit 2
+reddit-lyr get_karma
 
 # Write operations (non-destructive first)
-reddit-httpx vote --thing_id t3_1unctej --direction up
-reddit-httpx vote --thing_id t3_1unctej --direction none
-reddit-httpx save --thing_id t3_1unctej
-reddit-httpx unsave --thing_id t3_1unctej
-reddit-httpx subscribe --subreddit python
+reddit-lyr vote --thing_id t3_1unctej --direction up
+reddit-lyr vote --thing_id t3_1unctej --direction none
+reddit-lyr save --thing_id t3_1unctej
+reddit-lyr unsave --thing_id t3_1unctej
+reddit-lyr subscribe --subreddit python
 
 # Error cases
-reddit-httpx nonexistent_tool
-reddit-httpx browse_subreddit
-reddit-httpx get_post
+reddit-lyr nonexistent_tool
+reddit-lyr browse_subreddit
+reddit-lyr get_post
 ```
 
 - [ ] **Step 1: Deploy to VPS**
 
 ```bash
-cd /home/nerd/reddit-httpx && git pull && pipx install -e . --force
+cd /home/nerd/reddit-lyr && git pull && pipx install -e . --force
 ```
 
 - [ ] **Step 2: Run read operation tests**
@@ -325,7 +330,7 @@ All should return TOON error messages and exit 2.
 - [ ] **Step 5: Verify --full flag works with direct invocation**
 
 ```bash
-reddit-httpx get_post --post_id_or_url 1unctej --full
+reddit-lyr get_post --post_id_or_url 1unctej --full
 ```
 
 Expected: `selftext` field is not truncated.
@@ -333,7 +338,7 @@ Expected: `selftext` field is not truncated.
 - [ ] **Step 6: Verify help text is updated**
 
 ```bash
-reddit-httpx --help
+reddit-lyr --help
 ```
 
 Expected: Shows direct invocation examples.
@@ -355,38 +360,38 @@ Add direct invocation examples to `show_help()`:
 
 ```python
 def show_help() -> None:
-    print("reddit-httpx v0.1.0")
+    print("reddit-lyr v0.1.0")
     print("Reddit MCP server — browsing, posting, commenting, voting, and moderation")
     print()
     print("Usage:")
-    print("  reddit-httpx                    Show home view with live state")
-    print("  reddit-httpx <tool> [args]      Call a tool directly (see examples)")
-    print("  reddit-httpx --list-tools       List all available MCP tools")
-    print("  reddit-httpx --tool-info <name> Show details for a specific tool")
-    print("  reddit-httpx --login            Import cookies from browser")
-    print("  reddit-httpx --cookies-file F   Import cookies from a JSON file")
-    print("  reddit-httpx --logout           Clear stored session")
-    print("  reddit-httpx --status           Check authentication status")
-    print("  reddit-httpx --fields <fields>  Comma-separated extra fields for lists")
-    print("  reddit-httpx --full            Show complete text fields (no truncation)")
-    print("  reddit-httpx --toon            Render tool results in TOON format")
-    print("  reddit-httpx --help             Show this help message")
+    print("  reddit-lyr                    Show home view with live state")
+    print("  reddit-lyr <tool> [args]      Call a tool directly (see examples)")
+    print("  reddit-lyr --list-tools       List all available MCP tools")
+    print("  reddit-lyr --tool-info <name> Show details for a specific tool")
+    print("  reddit-lyr --login            Import cookies from browser")
+    print("  reddit-lyr --cookies-file F   Import cookies from a JSON file")
+    print("  reddit-lyr --logout           Clear stored session")
+    print("  reddit-lyr --status           Check authentication status")
+    print("  reddit-lyr --fields <fields>  Comma-separated extra fields for lists")
+    print("  reddit-lyr --full            Show complete text fields (no truncation)")
+    print("  reddit-lyr --toon            Render tool results in TOON format")
+    print("  reddit-lyr --help             Show this help message")
     print()
     print("Examples:")
-    print("  reddit-httpx browse_subreddit --subreddit python --limit 5")
-    print("  reddit-httpx search_posts --query 'rust lang' --limit 3")
-    print("  reddit-httpx get_post --post_id_or_url 1unctej")
-    print("  reddit-httpx vote --thing_id t3_1unctej --direction up")
-    print("  reddit-httpx --tool-info search_posts")
-    print("  reddit-httpx --list-tools")
-    print("  reddit-httpx --login")
+    print("  reddit-lyr browse_subreddit --subreddit python --limit 5")
+    print("  reddit-lyr search_posts --query 'rust lang' --limit 3")
+    print("  reddit-lyr get_post --post_id_or_url 1unctej")
+    print("  reddit-lyr vote --thing_id t3_1unctej --direction up")
+    print("  reddit-lyr --tool-info search_posts")
+    print("  reddit-lyr --list-tools")
+    print("  reddit-lyr --login")
 ```
 
 - [ ] **Step 1: Update `show_help()` with new examples**
 
 - [ ] **Step 2: Verify help output**
 
-Run: `reddit-httpx --help`
+Run: `reddit-lyr --help`
 Expected: Shows direct invocation examples
 
 - [ ] **Step 3: Commit**
@@ -402,12 +407,12 @@ git commit -m "docs: update --help with direct invocation examples"
 
 After all tasks, verify:
 
-1. **Parity:** Every tool callable via `reddit-httpx <tool_name> <args>` ✅
+1. **Parity:** Every tool callable via `reddit-lyr <tool_name> <args>` ✅
 2. **Output match:** CLI output matches MCP output (JSON) ✅
 3. **TOON option:** `--toon` flag renders human-readable output ✅
 4. **Error handling:** Unknown tool / missing args → TOON error, exit 2 ✅
 5. **Type coercion:** `--limit 5` becomes int, `--direction up` stays string ✅
-6. **Positional args:** `reddit-httpx browse_subreddit python` works ✅
+6. **Positional args:** `reddit-lyr browse_subreddit python` works ✅
 7. **Existing CLI:** `--status`, `--list-tools`, `--help` unchanged ✅
 8. **`--full` flag:** Bypasses truncation for tool results ✅
 9. **VPS test:** All 56 tools work from CLI on the VPS ✅

@@ -10,17 +10,17 @@ description: >
 Full Reddit automation via MCP — browsing, posting, commenting, voting, and moderation.
 
 <!-- Static skill -->
-<!-- Install: npx skills add <owner/reddit-httpx> --skill reddit-mcp -->
-<!-- CI check: diff <(reddit-httpx --help) SKILL.md && exit 1 -->
+<!-- Install: npx skills add <owner/reddit-lyr> --skill reddit-mcp -->
+<!-- CI check: diff <(reddit-lyr --help) SKILL.md && exit 1 -->
 
 ## Quick Start
 
 ```bash
 # Run the MCP server
-reddit-httpx
+reddit-lyr
 
 # Or with HTTP transport
-reddit-httpx --transport streamable-http --port 8000
+reddit-lyr --transport streamable-http --port 8000
 ```
 
 ## MCP Configuration
@@ -29,7 +29,7 @@ reddit-httpx --transport streamable-http --port 8000
 {
   "mcpServers": {
     "reddit": {
-      "command": "reddit-httpx",
+      "command": "reddit-lyr",
       "args": []
     }
   }
@@ -63,10 +63,10 @@ And more — run the MCP server to see all 45 tools.
 
 ```bash
 # Import cookies from browser
-reddit-httpx --login
+reddit-lyr --login
 
 # Check status
-reddit-httpx --status
+reddit-lyr --status
 ```
 
 Or set `REDDIT_COOKIES` env var.

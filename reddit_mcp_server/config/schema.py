@@ -80,15 +80,11 @@ class AppConfig:
 
     def _validate_port_range(self) -> None:
         if not (1 <= self.server.port <= 65535):
-            raise ConfigurationError(
-                f"Port {self.server.port} is not in valid range (1-65535)"
-            )
+            raise ConfigurationError(f"Port {self.server.port} is not in valid range (1-65535)")
 
     def _validate_path_format(self) -> None:
         if not self.server.path.startswith("/"):
-            raise ConfigurationError(
-                f"HTTP path '{self.server.path}' must start with '/'"
-            )
+            raise ConfigurationError(f"HTTP path '{self.server.path}' must start with '/'")
         if len(self.server.path) < 2:
             raise ConfigurationError(
                 f"HTTP path '{self.server.path}' must be at least 2 characters"

@@ -25,8 +25,11 @@ _client_cookies_hash = None
 def _cookies_hash(cookies: dict[str, str]) -> str:
     """Generate a hash of cookies to detect changes."""
     import hashlib
+
     # Only hash the important cookies
-    important = {k: v for k, v in cookies.items() if k in ("token_v2", "reddit_session", "csrf_token")}
+    important = {
+        k: v for k, v in cookies.items() if k in ("token_v2", "reddit_session", "csrf_token")
+    }
     return hashlib.sha256(str(sorted(important.items())).encode()).hexdigest()[:16]
 
 
@@ -153,6 +156,7 @@ def reset_client():
     global _client, _client_cookies_hash
     if _client is not None:
         import asyncio
+
         try:
             loop = asyncio.get_running_loop()
             loop.create_task(_client.close())

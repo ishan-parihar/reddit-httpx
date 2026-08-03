@@ -1,4 +1,4 @@
-# reddit-httpx: Implementation Plan
+# reddit-lyr: Implementation Plan
 
 ## Overview
 
@@ -11,7 +11,7 @@ A Python MCP/CLI tool for full Reddit account automation using browser cookies +
 ## Architecture
 
 ```
-reddit-httpx/
+reddit-lyr/
 ├── pyproject.toml
 ├── README.md
 ├── .env.example

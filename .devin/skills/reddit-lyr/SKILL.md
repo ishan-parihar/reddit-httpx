@@ -21,19 +21,19 @@ Reddit MCP Server provides comprehensive Reddit automation:
 ## Quick Start
 ```bash
 # Show home view with live state
-reddit-httpx
+reddit-lyr
 
 # Import browser cookies
-reddit-httpx --login
+reddit-lyr --login
 
 # Check session status
-reddit-httpx --status
+reddit-lyr --status
 
 # List available tools
-reddit-httpx --list-tools
+reddit-lyr --list-tools
 
 # Start MCP server
-reddit-httpx
+reddit-lyr
 ```
 
 ## MCP Tools
@@ -57,7 +57,7 @@ reddit-httpx
 ## Session Integration
 Install session hooks for ambient context:
 ```bash
-reddit-httpx --install-hook
+reddit-lyr --install-hook
 ```
 
 This shows Reddit session state on every agent session start.
@@ -71,14 +71,14 @@ This shows Reddit session state on every agent session start.
 ## Examples
 ```bash
 # Browse a subreddit
-reddit-httpx browse_subreddit --subreddit python --limit 5
+reddit-lyr browse_subreddit --subreddit python --limit 5
 
 # Search posts
-reddit-httpx search_posts --query "rust lang" --limit 3
+reddit-lyr search_posts --query "rust lang" --limit 3
 
 # Get post details
-reddit-httpx get_post --post_id_or_url 1unctej
+reddit-lyr get_post --post_id_or_url 1unctej
 
 # Vote on a post
-reddit-httpx vote --thing_id t3_1unctej --direction up
+reddit-lyr vote --thing_id t3_1unctej --direction up
 ```

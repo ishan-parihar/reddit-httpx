@@ -103,9 +103,7 @@ class RedditAPIClient:
                                 f"Session expired: {error_msg or 'Please log in.'}"
                             )
                         if error_code:
-                            raise RedditMCPError(
-                                f"Reddit API error [{error_code}]: {error_msg}"
-                            )
+                            raise RedditMCPError(f"Reddit API error [{error_code}]: {error_msg}")
                 return result
             except (AuthenticationError, SessionExpiredError, RateLimitError):
                 raise
@@ -201,9 +199,7 @@ class RedditAPIClient:
         return normalize_listing(raw, "post")
 
     async def get_popular(self, limit: int = 25) -> dict:
-        raw = await self._get(
-            "/r/popular/hot.json", params={"limit": limit, "raw_json": 1}
-        )
+        raw = await self._get("/r/popular/hot.json", params={"limit": limit, "raw_json": 1})
         return normalize_listing(raw, "post")
 
     # === Search (normalized) ===
@@ -250,9 +246,7 @@ class RedditAPIClient:
         raw = await self._get(f"/r/{subreddit}/comments/{post_id}.json", params=params)
         return normalize_post_with_comments(raw)
 
-    async def get_post_by_id(
-        self, post_id: str, sort: str = "best", limit: int = 50
-    ) -> dict:
+    async def get_post_by_id(self, post_id: str, sort: str = "best", limit: int = 50) -> dict:
         params = {"sort": sort, "limit": limit, "raw_json": 1}
         raw = await self._get(f"/comments/{post_id}.json", params=params)
         return normalize_post_with_comments(raw)
@@ -262,18 +256,14 @@ class RedditAPIClient:
         raw = await self._get(f"/user/{username}/about.json", params={"raw_json": 1})
         return normalize_user(raw)
 
-    async def get_user_posts(
-        self, username: str, sort: str = "new", limit: int = 25
-    ) -> dict:
+    async def get_user_posts(self, username: str, sort: str = "new", limit: int = 25) -> dict:
         raw = await self._get(
             f"/user/{username}/submitted.json",
             params={"sort": sort, "limit": limit, "raw_json": 1},
         )
         return normalize_listing(raw, "post")
 
-    async def get_user_comments(
-        self, username: str, sort: str = "new", limit: int = 25
-    ) -> dict:
+    async def get_user_comments(self, username: str, sort: str = "new", limit: int = 25) -> dict:
         raw = await self._get(
             f"/user/{username}/comments.json",
             params={"sort": sort, "limit": limit, "raw_json": 1},
@@ -322,29 +312,21 @@ class RedditAPIClient:
         return await self._post("/api/submit", data=data)
 
     async def edit_post(self, thing_id: str, text: str) -> dict:
-        return await self._post(
-            "/api/editusertext", data={"thing_id": thing_id, "text": text}
-        )
+        return await self._post("/api/editusertext", data={"thing_id": thing_id, "text": text})
 
     async def delete_thing(self, thing_id: str) -> dict:
         return await self._post("/api/del", data={"id": thing_id})
 
     # === Comments ===
     async def comment(self, parent_id: str, text: str) -> dict:
-        return await self._post(
-            "/api/comment", data={"thing_id": parent_id, "text": text}
-        )
+        return await self._post("/api/comment", data={"thing_id": parent_id, "text": text})
 
     async def edit_comment(self, thing_id: str, text: str) -> dict:
-        return await self._post(
-            "/api/editusertext", data={"thing_id": thing_id, "text": text}
-        )
+        return await self._post("/api/editusertext", data={"thing_id": thing_id, "text": text})
 
     # === Vote ===
     async def vote(self, thing_id: str, direction: int) -> dict:
-        return await self._post(
-            "/api/vote", data={"id": thing_id, "dir": str(direction)}
-        )
+        return await self._post("/api/vote", data={"id": thing_id, "dir": str(direction)})
 
     # === Save ===
     async def save(self, thing_id: str) -> dict:
@@ -365,9 +347,7 @@ class RedditAPIClient:
         raw = await self._get(
             f"/user/{username}/saved.json", params={"limit": limit, "raw_json": 1}
         )
-        return normalize_listing(
-            raw, "post"
-        )  # saved can be mixed, but posts are primary
+        return normalize_listing(raw, "post")  # saved can be mixed, but posts are primary
 
     async def report(
         self,
@@ -390,14 +370,10 @@ class RedditAPIClient:
         return await self._post("/api/block_user", data={"name": username})
 
     async def follow_post(self, thing_id: str, follow: bool = True) -> dict:
-        return await self._post(
-            "/api/follow_post", data={"fullname": thing_id, "follow": follow}
-        )
+        return await self._post("/api/follow_post", data={"fullname": thing_id, "follow": follow})
 
     async def sendreplies(self, thing_id: str, state: bool = True) -> dict:
-        return await self._post(
-            "/api/sendreplies", data={"id": thing_id, "state": state}
-        )
+        return await self._post("/api/sendreplies", data={"id": thing_id, "state": state})
 
     async def marknsfw(self, thing_id: str) -> dict:
         return await self._post("/api/marknsfw", data={"id": thing_id})
@@ -423,9 +399,7 @@ class RedditAPIClient:
             "awarder_karma": d.get("awarder_karma", 0),
         }
 
-    async def get_user_overview(
-        self, username: str, sort: str = "new", limit: int = 25
-    ) -> dict:
+    async def get_user_overview(self, username: str, sort: str = "new", limit: int = 25) -> dict:
         raw = await self._get(
             f"/user/{username}/overview.json",
             params={"sort": sort, "limit": limit, "raw_json": 1},
@@ -433,9 +407,7 @@ class RedditAPIClient:
         return normalize_overview(raw)
 
     async def get_subreddit_rules(self, subreddit: str) -> dict:
-        raw = await self._get(
-            f"/r/{subreddit}/about/rules.json", params={"raw_json": 1}
-        )
+        raw = await self._get(f"/r/{subreddit}/about/rules.json", params={"raw_json": 1})
         # Rules are already pretty clean, just pass through the rules array
         rules = raw.get("rules", [])
         return {
@@ -450,22 +422,16 @@ class RedditAPIClient:
         }
 
     async def get_subreddit_moderators(self, subreddit: str) -> dict:
-        raw = await self._get(
-            f"/r/{subreddit}/about/moderators.json", params={"raw_json": 1}
-        )
+        raw = await self._get(f"/r/{subreddit}/about/moderators.json", params={"raw_json": 1})
         return normalize_listing(raw, "user")
 
     # === Messaging ===
     async def get_inbox(self, where: str = "inbox", limit: int = 25) -> dict:
-        raw = await self._get(
-            f"/message/{where}.json", params={"limit": limit, "raw_json": 1}
-        )
+        raw = await self._get(f"/message/{where}.json", params={"limit": limit, "raw_json": 1})
         return normalize_listing(raw, item_type="message")
 
     async def send_message(self, to: str, subject: str, body: str) -> dict:
-        return await self._post(
-            "/api/compose", data={"to": to, "subject": subject, "text": body}
-        )
+        return await self._post("/api/compose", data={"to": to, "subject": subject, "text": body})
 
     async def read_message(self, thing_id: str) -> dict:
         return await self._post("/api/read_message", data={"id": thing_id})
@@ -475,14 +441,10 @@ class RedditAPIClient:
 
     # === Subreddit ===
     async def subscribe(self, subreddit: str) -> dict:
-        return await self._post(
-            "/api/subscribe", data={"sr_name": subreddit, "action": "sub"}
-        )
+        return await self._post("/api/subscribe", data={"sr_name": subreddit, "action": "sub"})
 
     async def unsubscribe(self, subreddit: str) -> dict:
-        return await self._post(
-            "/api/subscribe", data={"sr_name": subreddit, "action": "unsub"}
-        )
+        return await self._post("/api/subscribe", data={"sr_name": subreddit, "action": "unsub"})
 
     async def get_subreddit_info(self, subreddit: str) -> dict:
         raw = await self._get(f"/r/{subreddit}/about.json", params={"raw_json": 1})
@@ -499,9 +461,7 @@ class RedditAPIClient:
         return await self._get("/api/v1/me/friends.json", params={"raw_json": 1})
 
     async def add_friend(self, username: str) -> dict:
-        return await self._request(
-            "PUT", f"/api/v1/me/friends/{username}", json={"name": username}
-        )
+        return await self._request("PUT", f"/api/v1/me/friends/{username}", json={"name": username})
 
     async def remove_friend(self, username: str) -> dict:
         return await self._request("DELETE", f"/api/v1/me/friends/{username}")
@@ -517,9 +477,7 @@ class RedditAPIClient:
         return await self._post("/api/distinguish", data={"id": thing_id, "how": how})
 
     async def mod_sticky(self, thing_id: str, state: bool = True) -> dict:
-        return await self._post(
-            "/api/set_subreddit_sticky", data={"id": thing_id, "state": state}
-        )
+        return await self._post("/api/set_subreddit_sticky", data={"id": thing_id, "state": state})
 
     async def mod_lock(self, thing_id: str) -> dict:
         return await self._post("/api/lock", data={"id": thing_id})

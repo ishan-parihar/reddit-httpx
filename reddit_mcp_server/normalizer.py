@@ -115,11 +115,7 @@ def _extract_fields(data: dict, allowed: set) -> dict:
         if k not in allowed or v is None:
             continue
         # Truncate long body/selftext fields (AXI §3)
-        if (
-            k in ("selftext", "body")
-            and isinstance(v, str)
-            and len(v) > MAX_TEXT_LENGTH
-        ):
+        if k in ("selftext", "body") and isinstance(v, str) and len(v) > MAX_TEXT_LENGTH:
             _truncate_text(v, k, out)
         else:
             out[k] = v

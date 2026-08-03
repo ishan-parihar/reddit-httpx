@@ -29,10 +29,10 @@ REDDIT_WRITE_REQUIRED_COOKIES = ["reddit_session"]
 
 class RedditCookieValidator:
     """Validates Reddit cookies by making an API call."""
-    
+
     def __init__(self):
         self._client: Optional[RedditAPIClient] = None
-    
+
     async def validate(self, cookies: dict[str, str]) -> bool:
         """Validate cookies by calling /api/me.json."""
         try:
@@ -44,7 +44,7 @@ class RedditCookieValidator:
         except Exception as e:
             logger.debug(f"Reddit cookie validation failed: {e}")
             return False
-    
+
     async def validate_write(self, cookies: dict[str, str]) -> bool:
         """Validate cookies for write operations (requires reddit_session)."""
         if "reddit_session" not in cookies:
@@ -54,26 +54,24 @@ class RedditCookieValidator:
 
 class RedditObscuraManager:
     """Reddit-specific wrapper around ObscuraCookieManager."""
-    
+
     def __init__(self):
         self._manager: Optional[ObscuraCookieManager] = None
         self._validator = RedditCookieValidator()
         self._initialized = False
-    
+
     def _get_storage(self) -> FileCookieStorage:
         """Get file-based cookie storage."""
         return FileCookieStorage(get_cookies_path())
-    
+
     def _get_extractor(self) -> BrowserCookieExtractor:
         """Get browser cookie extractor (prefers Zen, then Brave)."""
         # For now, return a simple extractor that doesn't try browser extraction
         # to avoid compatibility issues with obscura-cookie-manager
         return BrowserCookieExtractor(
-            domain="reddit.com",
-            required_cookies=REDDIT_REQUIRED_COOKIES,
-            preferred_browsers=[]
+            domain="reddit.com", required_cookies=REDDIT_REQUIRED_COOKIES, preferred_browsers=[]
         )
-    
+
     def _get_manager(self) -> ObscuraCookieManager:
         """Get or create the ObscuraCookieManager instance."""
         if self._manager is None:
@@ -89,25 +87,26 @@ class RedditObscuraManager:
             # Set invalidation callback
             self._manager.set_invalidation_callback(self._on_auth_invalidated)
         return self._manager
-    
+
     def _on_auth_invalidated(self) -> None:
         """Called when auth is invalidated - clear cached client."""
         from reddit_mcp_server.dependencies import reset_client
+
         reset_client()
         logger.warning("Reddit auth invalidated, client reset")
-    
+
     async def get_valid_cookies(self, force_refresh: bool = False) -> CookieValidationResult:
         """Get valid cookies, performing validation and re-extraction as needed."""
         manager = self._get_manager()
         return await manager.get_cookies(force_refresh=force_refresh)
-    
+
     async def get_write_cookies(self, force_refresh: bool = False) -> CookieValidationResult:
         """Get cookies valid for write operations (requires reddit_session)."""
         result = await self.get_valid_cookies(force_refresh)
-        
+
         if not result.valid:
             return result
-        
+
         # Check if we have reddit_session for writes
         if "reddit_session" not in result.cookies:
             return CookieValidationResult(
@@ -115,9 +114,9 @@ class RedditObscuraManager:
                 source=result.source,
                 cookies=result.cookies,
                 error="reddit_session cookie missing - write operations require re-login",
-                metadata={"write_capable": False}
+                metadata={"write_capable": False},
             )
-        
+
         # Validate write capability
         is_write_valid = await self._validator.validate_write(result.cookies)
         if not is_write_valid:
@@ -126,26 +125,26 @@ class RedditObscuraManager:
                 source=result.source,
                 cookies=result.cookies,
                 error="reddit_session expired - write operations require re-login",
-                metadata={"write_capable": False}
+                metadata={"write_capable": False},
             )
-        
+
         return CookieValidationResult(
             valid=True,
             source=result.source,
             cookies=result.cookies,
-            metadata={"write_capable": True}
+            metadata={"write_capable": True},
         )
-    
+
     async def force_re_extraction(self) -> CookieValidationResult:
         """Force re-extraction from browser (call after user logs in)."""
         manager = self._get_manager()
         return await manager.force_re_extraction()
-    
+
     async def invalidate_and_trigger_relogin(self) -> None:
         """Invalidate auth and trigger re-login flow."""
         manager = self._get_manager()
         await manager.invalidate_and_trigger_relogin()
-    
+
     def is_cache_valid(self) -> bool:
         """Check if cached cookies are within validation interval."""
         manager = self._get_manager()

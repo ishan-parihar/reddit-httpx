@@ -6,12 +6,18 @@ import sys
 import pytest
 
 from reddit_mcp_server.cli_main import (
-    list_tools_and_exit, tool_info_and_exit, axi_error, _get_tools,
-    _toon_object, _toon_kv, _toon_quote,
+    list_tools_and_exit,
+    tool_info_and_exit,
+    axi_error,
+    _get_tools,
+    _toon_object,
+    _toon_kv,
+    _toon_quote,
 )
 
 
 # ── TOON output parsing helpers (for test assertions) ──────────────────────
+
 
 def _parse_treon_kv(text: str) -> dict:
     """Parse flat TOON key: value lines into a dict. Only top-level scalars."""
@@ -38,11 +44,12 @@ def _parse_treon_kv(text: str) -> dict:
 
 # ── TOON helper unit tests ─────────────────────────────────────────────────
 
+
 class TestToonHelpers:
     """Unit tests for TOON formatting helpers."""
 
     def test_toon_kv_string(self):
-        assert _toon_kv("name", "reddit-httpx") == "name: reddit-httpx"
+        assert _toon_kv("name", "reddit-lyr") == "name: reddit-lyr"
 
     def test_toon_kv_bool(self):
         assert _toon_kv("ok", True) == "ok: true"
@@ -82,6 +89,7 @@ class TestToonHelpers:
 
 # ── list-tools tests ───────────────────────────────────────────────────────
 
+
 class TestListTools:
     """Tests for the --list-tools flag (AXI §8 content-first)."""
 
@@ -119,6 +127,7 @@ class TestListTools:
 
 
 # ── tool-info tests ────────────────────────────────────────────────────────
+
 
 class TestToolInfo:
     """Tests for the --tool-info flag (AXI §9 contextual disclosure)."""
@@ -183,6 +192,7 @@ class TestToolInfo:
 
 
 # ── axi_error tests ────────────────────────────────────────────────────────
+
 
 class TestAxiError:
     """Tests for the axi_error structured error function (AXI §6)."""

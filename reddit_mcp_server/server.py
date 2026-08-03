@@ -20,7 +20,7 @@ from reddit_mcp_server.tools import (
 
 def create_mcp_server() -> FastMCP:
     mcp = FastMCP(
-        "reddit-httpx",
+        "reddit-lyr",
         instructions="Reddit MCP server - full Reddit automation via browser cookies",
     )
 

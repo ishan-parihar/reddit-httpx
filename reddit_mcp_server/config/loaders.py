@@ -96,7 +96,7 @@ def load_from_args(config: AppConfig) -> AppConfig:
     # Skip argparse parsing if in tool mode (to avoid conflicts with direct tool invocation)
     if os.environ.get("REDDIT_MCP_TOOL_MODE") == "1":
         return config
-    
+
     parser = argparse.ArgumentParser(
         description="Reddit MCP Server - A Model Context Protocol server for Reddit integration"
     )

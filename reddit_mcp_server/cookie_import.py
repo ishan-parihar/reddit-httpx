@@ -15,8 +15,7 @@ BROWSER_PATHS = {
     },
     "chrome": {
         "linux": Path.home() / ".config/google-chrome/Default/Cookies",
-        "darwin": Path.home()
-        / "Library/Application Support/Google/Chrome/Default/Cookies",
+        "darwin": Path.home() / "Library/Application Support/Google/Chrome/Default/Cookies",
     },
     "firefox": {
         "linux": Path.home() / ".mozilla/firefox",
@@ -24,8 +23,7 @@ BROWSER_PATHS = {
     },
     "edge": {
         "linux": Path.home() / ".config/microsoft-edge/Default/Cookies",
-        "darwin": Path.home()
-        / "Library/Application Support/Microsoft Edge/Default/Cookies",
+        "darwin": Path.home() / "Library/Application Support/Microsoft Edge/Default/Cookies",
     },
     "zen": {
         "linux": Path.home() / ".zen",
@@ -72,9 +70,7 @@ def _get_chromium_key(browser: str) -> bytes | None:
         from cryptography.hazmat.primitives import hashes
 
         # Linux: key derived from 'peanuts' password with PBKDF2
-        kdf = PBKDF2HMAC(
-            algorithm=hashes.SHA1(), length=16, salt=b"saltysalt", iterations=1
-        )
+        kdf = PBKDF2HMAC(algorithm=hashes.SHA1(), length=16, salt=b"saltysalt", iterations=1)
         return kdf.derive(b"peanuts")
     except Exception as e:
         logger.debug(f"Could not derive chromium key: {e}")
@@ -211,9 +207,9 @@ def import_cookies_interactive() -> dict[str, str]:
         try:
             import inquirer
 
-            answers = inquirer.prompt(
-                [inquirer.List("browser", message="Select browser", choices=browsers)]
-            )
+            answers = inquirer.prompt([
+                inquirer.List("browser", message="Select browser", choices=browsers)
+            ])
             browser = answers["browser"] if answers else browsers[0]
         except Exception:
             browser = browsers[0]

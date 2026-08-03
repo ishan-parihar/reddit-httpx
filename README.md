@@ -9,7 +9,7 @@
 
 **Complete Reddit API wrapper** — 50+ endpoints, async httpx, MCP server, zero PRAW dependency.
 
-![Reddit-Httpx MCP](https://github.com/ishan-parihar/reddit-httpx/raw/main/assets/readme/reddit-httpx-mcp.png)
+![Reddit-Httpx MCP](https://github.com/ishan-parihar/reddit-lyr/raw/main/assets/readme/reddit-lyr-mcp.png)
 
 ---
 
@@ -19,7 +19,7 @@
 |-------|-------------|
 | **Core** | `RedditClient` — async, typed, 50+ endpoints |
 | **MCP Server** | 32 tools for agents (browse, post, comment, vote, mod) |
-| **CLI** | `reddit-httpx browse`, `reddit-httpx post`, `reddit-httpx inbox` |
+| **CLI** | `reddit-lyr browse`, `reddit-lyr post`, `reddit-lyr inbox` |
 
 **Endpoints:** Frontpage, Subreddits, Posts, Comments, Users, Messages, Moderation, Search, Wiki, Live, Collections, Awards, Polls, Predictions
 
@@ -29,10 +29,10 @@
 
 ```bash
 # Install
-pipx install reddit-httpx
+pipx install reddit-lyr
 
 # Auth (interactive)
-reddit-httpx auth login
+reddit-lyr auth login
 
 # Use as library
 from reddit_httpx import RedditClient
@@ -40,7 +40,7 @@ client = RedditClient()
 posts = await client.browse_subreddit("rust", sort="hot", limit=25)
 
 # MCP server for agents
-reddit-httpx mcp
+reddit-lyr mcp
 ```
 
 ---
@@ -96,11 +96,11 @@ reddit-httpx mcp
 
 | MCP tools | Comment tree | Post detail |
 |:---:|:---:|:---:|
-| ![Tools](https://github.com/ishan-parihar/reddit-httpx/raw/main/assets/readme/tools.png) | ![Comments](https://github.com/ishan-parihar/reddit-httpx/raw/main/assets/readme/comments.png) | ![Post](https://github.com/ishan-parihar/reddit-httpx/raw/main/assets/readme/post.png) |
+| ![Tools](https://github.com/ishan-parihar/reddit-lyr/raw/main/assets/readme/tools.png) | ![Comments](https://github.com/ishan-parihar/reddit-lyr/raw/main/assets/readme/comments.png) | ![Post](https://github.com/ishan-parihar/reddit-lyr/raw/main/assets/readme/post.png) |
 
 | Search results | Mod tools | Message inbox |
 |:---:|:---:|:---:|
-| ![Search](https://github.com/ishan-parihar/reddit-httpx/raw/main/assets/readme/search.png) | ![Mod](https://github.com/ishan-parihar/reddit-httpx/raw/main/assets/readme/mod.png) | ![Messages](https://github.com/ishan-parihar/reddit-httpx/raw/main/assets/readme/messages.png) |
+| ![Search](https://github.com/ishan-parihar/reddit-lyr/raw/main/assets/readme/search.png) | ![Mod](https://github.com/ishan-parihar/reddit-lyr/raw/main/assets/readme/mod.png) | ![Messages](https://github.com/ishan-parihar/reddit-lyr/raw/main/assets/readme/messages.png) |
 
 ## Requirements
 

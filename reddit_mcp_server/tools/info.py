@@ -14,9 +14,7 @@ def register_info_tools(mcp: FastMCP) -> None:
             handle_api_error(e)
 
     @mcp.tool()
-    async def get_user_overview(
-        username: str, sort: str = "new", limit: int = 25
-    ) -> dict:
+    async def get_user_overview(username: str, sort: str = "new", limit: int = 25) -> dict:
         """Get a user's combined overview of posts and comments."""
         try:
             client = await get_reddit_client()

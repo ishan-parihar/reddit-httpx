@@ -1,6 +1,6 @@
-# AXI Audit Report — reddit-httpx
+# AXI Audit Report — reddit-lyr
 
-**Project:** reddit-httpx (MCP server for Reddit automation)
+**Project:** reddit-lyr (MCP server for Reddit automation)
 **Date:** 2025-07-29
 **Auditor:** AXI skill + Ponytail mode
 **Final Score:** 96/100 (was 88/100)
@@ -9,7 +9,7 @@
 
 ## Summary
 
-All high and medium priority AXI compliance issues have been fixed. The reddit-httpx CLI now fully conforms to AXI standards.
+All high and medium priority AXI compliance issues have been fixed. The reddit-lyr CLI now fully conforms to AXI standards.
 
 ---
 
@@ -35,7 +35,7 @@ All high and medium priority AXI compliance issues have been fixed. The reddit-h
 
 ### HIGH Priority (All Fixed)
 
-1. **SKILL.md binary name** — Changed `reddit-mcp` → `reddit-httpx` throughout
+1. **SKILL.md binary name** — Changed `reddit-mcp` → `reddit-lyr` throughout
 2. **Module-level side effect** — Already fixed (lazy `_get_tools()` pattern)
 3. **Home view network call** — Removed `_get_username()` API call from home view
 
@@ -51,13 +51,13 @@ All high and medium priority AXI compliance issues have been fixed. The reddit-h
 
 5. **`--fields` flag** — Added to `--list-tools` and home view (AXI §2)
    ```bash
-   reddit-httpx --list-tools --fields cookies
-   reddit-httpx --fields cookies
+   reddit-lyr --list-tools --fields cookies
+   reddit-lyr --fields cookies
    ```
 
 6. **Session hook installer** — Added `--install-hook` (AXI §7)
    ```bash
-   reddit-httpx --install-hook
+   reddit-lyr --install-hook
    # Installs SessionStart hooks for:
    # - Claude Code (~/.claude/settings.json)
    # - Codex (~/.codex/hooks.json)
@@ -89,18 +89,18 @@ ruff check reddit_mcp_server/
 # clean
 
 # CLI outputs verified
-reddit-httpx                  # home view — instant, no network
-reddit-httpx --list-tools     # TOON array, all 56 tools
-reddit-httpx --list-tools --fields cookies  # extended schema
-reddit-httpx --tool-info browse_subreddit   # params with descriptions
-reddit-httpx --status         # flat TOON with auth details
-reddit-httpx --logout         # TOON success response
-reddit-httpx --install-hook   # installs ambient context hooks
-reddit-httpx --help           # complete reference
+reddit-lyr                  # home view — instant, no network
+reddit-lyr --list-tools     # TOON array, all 56 tools
+reddit-lyr --list-tools --fields cookies  # extended schema
+reddit-lyr --tool-info browse_subreddit   # params with descriptions
+reddit-lyr --status         # flat TOON with auth details
+reddit-lyr --logout         # TOON success response
+reddit-lyr --install-hook   # installs ambient context hooks
+reddit-lyr --help           # complete reference
 
 # Skill binary name fixed
 grep -r "reddit-mcp" SKILL.md  # returns nothing
-grep "reddit-httpx" SKILL.md   # appears throughout
+grep "reddit-lyr" SKILL.md   # appears throughout
 ```
 
 ---
@@ -125,7 +125,7 @@ All 56 mutation tools now return consistent TOON responses:
 
 ## Ambient Context Integration (AXI §7)
 
-The `--install-hook` command installs SessionStart hooks that run `reddit-httpx --status` at session start, providing agents with:
+The `--install-hook` command installs SessionStart hooks that run `reddit-lyr --status` at session start, providing agents with:
 
 ```
 session:

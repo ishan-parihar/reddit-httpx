@@ -23,12 +23,10 @@ def ensure_ready_or_raise() -> dict[str, str]:
     cookies = load_cookies()
     if not cookies:
         raise RuntimeError(
-            "Not authenticated. Run `reddit-httpx --login`, `reddit-httpx --cookies-file <path>`, or set REDDIT_COOKIES env var."
+            "Not authenticated. Run `reddit-lyr --login`, `reddit-lyr --cookies-file <path>`, or set REDDIT_COOKIES env var."
         )
     if not validate_session():
-        raise RuntimeError(
-            "Session invalid. Run `reddit-httpx --login` to re-authenticate."
-        )
+        raise RuntimeError("Session invalid. Run `reddit-lyr --login` to re-authenticate.")
     if not validate_write_session():
         logger.warning(
             "reddit_session cookie missing — write operations (vote, send, hide) will fail. "

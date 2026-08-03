@@ -23,7 +23,12 @@ class RedditDaemonManager:
     def __init__(self, daemon_url: str = "http://127.0.0.1:9999"):
         self.daemon_url = daemon_url
         self._plugin: Optional[ObscuraPlugin] = None
-        self._use_daemon = os.getenv("REDDIT_USE_DAEMON", "true").lower() in ("1", "true", "yes", "on")
+        self._use_daemon = os.getenv("REDDIT_USE_DAEMON", "true").lower() in (
+            "1",
+            "true",
+            "yes",
+            "on",
+        )
 
     async def _get_plugin(self) -> ObscuraPlugin:
         """Get or create the ObscuraPlugin instance."""
@@ -38,6 +43,7 @@ class RedditDaemonManager:
             logger.debug("Daemon integration disabled, falling back to local ObscuraCookieManager")
             # Import here to avoid circular imports
             from reddit_mcp_server.obscura_integration import get_valid_reddit_cookies
+
             return await get_valid_reddit_cookies(force_refresh)
 
         try:
@@ -79,6 +85,7 @@ class RedditDaemonManager:
             # Fall back to local ObscuraCookieManager
             logger.debug("Falling back to local ObscuraCookieManager")
             from reddit_mcp_server.obscura_integration import get_valid_reddit_cookies
+
             return await get_valid_reddit_cookies(force_refresh)
 
     async def get_write_cookies(self, force_refresh: bool = False) -> CookieValidationResult:
@@ -95,14 +102,14 @@ class RedditDaemonManager:
                 source=result.source,
                 cookies=result.cookies,
                 error="reddit_session cookie missing - write operations require re-login",
-                metadata={"write_capable": False}
+                metadata={"write_capable": False},
             )
 
         return CookieValidationResult(
             valid=True,
             source=result.source,
             cookies=result.cookies,
-            metadata={"write_capable": True}
+            metadata={"write_capable": True},
         )
 
     async def close(self) -> None:
@@ -124,13 +131,17 @@ def get_reddit_daemon_manager(daemon_url: str = "http://127.0.0.1:9999") -> Redd
     return _reddit_daemon_manager
 
 
-async def get_valid_reddit_cookies_from_daemon(force_refresh: bool = False) -> CookieValidationResult:
+async def get_valid_reddit_cookies_from_daemon(
+    force_refresh: bool = False,
+) -> CookieValidationResult:
     """Get valid Reddit cookies using Obscura Daemon plugin."""
     manager = get_reddit_daemon_manager()
     return await manager.get_valid_cookies(force_refresh)
 
 
-async def get_write_reddit_cookies_from_daemon(force_refresh: bool = False) -> CookieValidationResult:
+async def get_write_reddit_cookies_from_daemon(
+    force_refresh: bool = False,
+) -> CookieValidationResult:
     """Get Reddit cookies valid for write operations using Obscura Daemon plugin."""
     manager = get_reddit_daemon_manager()
     return await manager.get_write_cookies(force_refresh)

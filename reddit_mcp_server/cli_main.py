@@ -17,11 +17,7 @@ def _toon_quote(val: str) -> str:
     # Must quote: looks like bool/number, contains delimiter/colon/bracket, starts with -
     needs_quote = (
         val in ("true", "false", "null")
-        or val.lstrip("-")
-        .replace(".", "", 1)
-        .replace("e", "", 1)
-        .replace("+", "", 1)
-        .isdigit()
+        or val.lstrip("-").replace(".", "", 1).replace("e", "", 1).replace("+", "", 1).isdigit()
         or any(c in val for c in (":", ",", '"', "[", "]", "{", "}", "#"))
         or val.startswith("-")
         or val.startswith("#")
@@ -156,13 +152,13 @@ def _get_bin_path() -> str:
     """Get executable path with home dir collapsed to ~ (AXI §10)."""
     try:
         # Use sys.argv[0] which is the actual CLI entry point
-        exe = sys.argv[0] if sys.argv else "reddit-httpx"
+        exe = sys.argv[0] if sys.argv else "reddit-lyr"
         home = os.environ.get("HOME", "")
         if home and exe.startswith(home):
             return exe.replace(home, "~", 1)
         return exe
     except Exception:
-        return "reddit-httpx"
+        return "reddit-lyr"
 
 
 # ── Tool registry (auto-discovered from MCP server) ────────────────────────
@@ -233,9 +229,7 @@ def show_home_view(fields: list[str] | None = None) -> None:
 
     # AXI §10: Tool identity header
     print(f"bin: {bin_path}")
-    print(
-        "description: Reddit MCP server — browsing, posting, commenting, voting, and moderation"
-    )
+    print("description: Reddit MCP server — browsing, posting, commenting, voting, and moderation")
     print()
 
     # Live session state
@@ -247,9 +241,7 @@ def show_home_view(fields: list[str] | None = None) -> None:
             print(f"  cookies: {auth_status.get('cookies_count', 0)}")
     else:
         print("  status: not_authenticated")
-        print(
-            "  help: Run `reddit-httpx --login` or `reddit-httpx --cookies-file <path>`"
-        )
+        print("  help: Run `reddit-lyr --login` or `reddit-lyr --cookies-file <path>`")
     print()
 
     # Tool listing in TOON format (AXI §2: minimal schema)
@@ -269,11 +261,11 @@ def show_home_view(fields: list[str] | None = None) -> None:
 
     # AXI §9: Contextual disclosure (dynamic count)
     hints = [
-        "Run `reddit-httpx --tool-info <name>` for detailed parameters",
-        "Run `reddit-httpx --list-tools` to see all tools",
-        "Run `reddit-httpx --login` to import browser cookies",
-        "Run `reddit-httpx --cookies-file <path>` to import cookies from JSON",
-        "Run `reddit-httpx` to start the MCP server",
+        "Run `reddit-lyr --tool-info <name>` for detailed parameters",
+        "Run `reddit-lyr --list-tools` to see all tools",
+        "Run `reddit-lyr --login` to import browser cookies",
+        "Run `reddit-lyr --cookies-file <path>` to import cookies from JSON",
+        "Run `reddit-lyr` to start the MCP server",
     ]
     print(f"help[{len(hints)}]:")
     for h in hints:
@@ -295,9 +287,9 @@ def list_tools_and_exit(fields: list[str] | None = None) -> None:
         print(f"  {','.join(row)}")
     print()
     print("help[3]:")
-    print("  Run `reddit-httpx <tool> [args]` to call a tool directly")
-    print("  Run `reddit-httpx --tool-info <name>` for details")
-    print("  Run `reddit-httpx` to start the MCP server")
+    print("  Run `reddit-lyr <tool> [args]` to call a tool directly")
+    print("  Run `reddit-lyr --tool-info <name>` for details")
+    print("  Run `reddit-lyr` to start the MCP server")
     sys.exit(0)
 
 
@@ -313,38 +305,29 @@ def tool_info_and_exit(tool_name: str) -> None:
         if tool:
             fields = {"name": tool.name, "description": tool.description or ""}
             # Flatten schema to TOON param list (AXI §2: minimal schemas)
-            schema = (
-                getattr(tool, "inputSchema", None)
-                or getattr(tool, "parameters", None)
-                or {}
-            )
+            schema = getattr(tool, "inputSchema", None) or getattr(tool, "parameters", None) or {}
             if isinstance(schema, dict):
                 props = schema.get("properties", {})
                 required = set(schema.get("required", []))
                 if props:
                     params = []
                     for pname, pdef in props.items():
-                        params.append(
-                            {
-                                "name": pname,
-                                "type": pdef.get("type", "any"),
-                                "required": "true" if pname in required else "false",
-                                "description": _truncate(pdef.get("description", ""), 80),
-                            }
-                        )
+                        params.append({
+                            "name": pname,
+                            "type": pdef.get("type", "any"),
+                            "required": "true" if pname in required else "false",
+                            "description": _truncate(pdef.get("description", ""), 80),
+                        })
                     fields["params"] = params
             print(_toon_object(fields))
             # AXI §9: Contextual next-step after detail view
-            print(f"help[1]: Run `reddit-httpx` to start the MCP server and call `{tool.name}`")
+            print(f"help[1]: Run `reddit-lyr` to start the MCP server and call `{tool.name}`")
         else:
             valid = sorted([t.name for t in tools_obj])
-            axi_error(
-                f"Unknown tool: '{tool_name}'", f"Valid tools: {', '.join(valid)}"
-            )
+            axi_error(f"Unknown tool: '{tool_name}'", f"Valid tools: {', '.join(valid)}")
     except Exception as e:
         axi_error(f"Failed to load tool info: {e}")
     sys.exit(0)
-
 
 
 def install_session_hook() -> None:
@@ -371,9 +354,7 @@ def install_session_hook() -> None:
         hooks = settings.get("hooks", {})
         session_start = hooks.get("SessionStart", [])
         already = any(
-            h.get("command") == f"{bin_path} --status"
-            for h in session_start
-            if isinstance(h, dict)
+            h.get("command") == f"{bin_path} --status" for h in session_start if isinstance(h, dict)
         )
         if not already:
             session_start.append({"command": f"{bin_path} --status"})
@@ -396,9 +377,7 @@ def install_session_hook() -> None:
             hooks = {}
         session_start = hooks.get("SessionStart", [])
         already = any(
-            h.get("command") == f"{bin_path} --status"
-            for h in session_start
-            if isinstance(h, dict)
+            h.get("command") == f"{bin_path} --status" for h in session_start if isinstance(h, dict)
         )
         if not already:
             session_start.append({"command": f"{bin_path} --status"})
@@ -417,13 +396,11 @@ def install_session_hook() -> None:
             with open(opencode_plugin) as f:
                 plugin = json.load(f)
         else:
-            plugin = {"name": "reddit-httpx", "hooks": {}}
+            plugin = {"name": "reddit-lyr", "hooks": {}}
         hooks = plugin.get("hooks", {})
         session_start = hooks.get("session_start", [])
         already = any(
-            h.get("command") == f"{bin_path} --status"
-            for h in session_start
-            if isinstance(h, dict)
+            h.get("command") == f"{bin_path} --status" for h in session_start if isinstance(h, dict)
         )
         if not already:
             session_start.append({"command": f"{bin_path} --status"})
@@ -437,9 +414,19 @@ def install_session_hook() -> None:
         print(f"OpenCode hook: {e}", file=sys.stderr)
 
     if hooks_installed:
-        print(_toon_object({"status": "success", "message": f"Installed hooks for: {', '.join(hooks_installed)}"}))
+        print(
+            _toon_object({
+                "status": "success",
+                "message": f"Installed hooks for: {', '.join(hooks_installed)}",
+            })
+        )
     else:
-        print(_toon_object({"status": "info", "message": "Hooks already installed or no supported editors found"}))
+        print(
+            _toon_object({
+                "status": "info",
+                "message": "Hooks already installed or no supported editors found",
+            })
+        )
     sys.exit(0)
 
 
@@ -448,7 +435,7 @@ def install_agent_skill() -> None:
     from pathlib import Path
 
     bin_path = _get_bin_path()
-    skill_dir = Path.home() / ".claude" / "skills" / "reddit-httpx"
+    skill_dir = Path.home() / ".claude" / "skills" / "reddit-lyr"
     skill_dir.mkdir(parents=True, exist_ok=True)
 
     skill_content = """name: Reddit MCP Server
@@ -474,19 +461,19 @@ Reddit MCP Server provides comprehensive Reddit automation:
 ## Quick Start
 ```bash
 # Show home view with live state
-reddit-httpx
+reddit-lyr
 
 # Import browser cookies
-reddit-httpx --login
+reddit-lyr --login
 
 # Check session status
-reddit-httpx --status
+reddit-lyr --status
 
 # List available tools
-reddit-httpx --list-tools
+reddit-lyr --list-tools
 
 # Start MCP server
-reddit-httpx
+reddit-lyr
 ```
 
 ## MCP Tools
@@ -510,7 +497,7 @@ reddit-httpx
 ## Session Integration
 Install session hooks for ambient context:
 ```bash
-reddit-httpx --install-hook
+reddit-lyr --install-hook
 ```
 
 This shows Reddit session state on every agent session start.
@@ -524,60 +511,65 @@ This shows Reddit session state on every agent session start.
 ## Examples
 ```bash
 # Browse a subreddit
-reddit-httpx browse_subreddit --subreddit python --limit 5
+reddit-lyr browse_subreddit --subreddit python --limit 5
 
 # Search posts
-reddit-httpx search_posts --query "rust lang" --limit 3
+reddit-lyr search_posts --query "rust lang" --limit 3
 
 # Get post details
-reddit-httpx get_post --post_id_or_url 1unctej
+reddit-lyr get_post --post_id_or_url 1unctej
 
 # Vote on a post
-reddit-httpx vote --thing_id t3_1unctej --direction up
+reddit-lyr vote --thing_id t3_1unctej --direction up
 ```
 """
 
     skill_file = skill_dir / "SKILL.md"
     skill_file.write_text(skill_content)
 
-    print(_toon_object({"status": "success", "skill_path": str(skill_file), "help": "Agent skill installed - will load automatically on Reddit-related tasks"}))
+    print(
+        _toon_object({
+            "status": "success",
+            "skill_path": str(skill_file),
+            "help": "Agent skill installed - will load automatically on Reddit-related tasks",
+        })
+    )
     sys.exit(0)
 
 
 def show_help() -> None:
-
     """Show usage information (AXI §10)."""
-    print("reddit-httpx v0.1.0")
+    print("reddit-lyr v0.1.0")
     print("Reddit MCP server — browsing, posting, commenting, voting, and moderation")
     print()
     print("Usage:")
-    print("  reddit-httpx                    Show home view with live state")
-    print("  reddit-httpx <tool> [args]      Call a tool directly (see examples)")
-    print("  reddit-httpx --list-tools       List all available MCP tools")
-    print("  reddit-httpx --tool-info <name> Show details for a specific tool")
-    print("  reddit-httpx --login            Import cookies from browser")
-    print("  reddit-httpx --cookies-file F   Import cookies from a JSON file")
-    print("  reddit-httpx --logout           Clear stored session")
-    print("  reddit-httpx --status           Check authentication status")
-    print("  reddit-httpx --fields <fields>  Comma-separated extra fields for lists")
-    print("  reddit-httpx --full            Show complete text fields (no truncation)")
-    print("  reddit-httpx --json            Render tool results as JSON (default is TOON)")
-    print("  reddit-httpx --help             Show this help message")
+    print("  reddit-lyr                    Show home view with live state")
+    print("  reddit-lyr <tool> [args]      Call a tool directly (see examples)")
+    print("  reddit-lyr --list-tools       List all available MCP tools")
+    print("  reddit-lyr --tool-info <name> Show details for a specific tool")
+    print("  reddit-lyr --login            Import cookies from browser")
+    print("  reddit-lyr --cookies-file F   Import cookies from a JSON file")
+    print("  reddit-lyr --logout           Clear stored session")
+    print("  reddit-lyr --status           Check authentication status")
+    print("  reddit-lyr --fields <fields>  Comma-separated extra fields for lists")
+    print("  reddit-lyr --full            Show complete text fields (no truncation)")
+    print("  reddit-lyr --json            Render tool results as JSON (default is TOON)")
+    print("  reddit-lyr --help             Show this help message")
     print()
     print("Environment:")
     print("  REDDIT_COOKIES     JSON string of cookies (loaded at server startup)")
     print("  REDDIT_MCP_LOG_LEVEL  Log level: DEBUG, INFO, WARNING, ERROR")
     print()
     print("Examples:")
-    print("  reddit-httpx browse_subreddit --subreddit python --limit 5")
-    print("  reddit-httpx browse_subreddit python --limit 5   # positional shorthand")
-    print("  reddit-httpx search_posts --query 'rust lang' --limit 3")
-    print("  reddit-httpx get_post --post_id_or_url 1unctej")
-    print("  reddit-httpx vote --thing_id t3_1unctej --direction up")
-    print("  reddit-httpx get_my_subreddits --limit 5 --json")
-    print("  reddit-httpx --tool-info search_posts")
-    print("  reddit-httpx --list-tools")
-    print("  reddit-httpx --login")
+    print("  reddit-lyr browse_subreddit --subreddit python --limit 5")
+    print("  reddit-lyr browse_subreddit python --limit 5   # positional shorthand")
+    print("  reddit-lyr search_posts --query 'rust lang' --limit 3")
+    print("  reddit-lyr get_post --post_id_or_url 1unctej")
+    print("  reddit-lyr vote --thing_id t3_1unctej --direction up")
+    print("  reddit-lyr get_my_subreddits --limit 5 --json")
+    print("  reddit-lyr --tool-info search_posts")
+    print("  reddit-lyr --list-tools")
+    print("  reddit-lyr --login")
 
 
 def run_tool_direct(tool_name: str, args: list[str], use_json: bool = False) -> None:
@@ -657,7 +649,7 @@ def run_tool_direct(tool_name: str, args: list[str], use_json: bool = False) -> 
         # Catch missing required args (e.g. "missing 1 required positional argument")
         axi_error(
             f"Tool `{tool_name}` missing required argument",
-            f"Run `reddit-httpx --tool-info {tool_name}` to see required parameters",
+            f"Run `reddit-lyr --tool-info {tool_name}` to see required parameters",
         )
     except Exception as e:
         axi_error(f"Tool `{tool_name}` failed: {e}")
@@ -677,7 +669,7 @@ def run_tool_direct(tool_name: str, args: list[str], use_json: bool = False) -> 
             print(_toon_object(compact))
         # AXI §3: hint when content was truncated
         if _has_truncation(compact):
-            print(_toon_kv("help", f"Run `reddit-httpx {tool_name} --full` to see complete text"))
+            print(_toon_kv("help", f"Run `reddit-lyr {tool_name} --full` to see complete text"))
         # AXI §9: contextual next-step hints (only for lists with items)
         if isinstance(compact, dict) and "items" in compact and count > 0:
             next_cursor = compact.get("next")
@@ -694,7 +686,7 @@ def run_tool_direct(tool_name: str, args: list[str], use_json: bool = False) -> 
 
 def main():
     global FULL_OUTPUT
-    # ── Direct tool invocation: reddit-httpx <tool_name> [args...] ──────
+    # ── Direct tool invocation: reddit-lyr <tool_name> [args...] ──────
     # Intercept before argparse so tool names aren't parsed as flags.
     if len(sys.argv) > 1 and not sys.argv[1].startswith("-"):
         tool_name = sys.argv[1]
@@ -714,9 +706,7 @@ def main():
         )
 
     parser = argparse.ArgumentParser(description="Reddit MCP Server", add_help=False)
-    parser.add_argument(
-        "--login", action="store_true", help="Import cookies from browser"
-    )
+    parser.add_argument("--login", action="store_true", help="Import cookies from browser")
     parser.add_argument(
         "--cookies-file",
         type=str,
@@ -724,12 +714,8 @@ def main():
         help="Import cookies from a JSON file",
     )
     parser.add_argument("--logout", action="store_true", help="Clear stored session")
-    parser.add_argument(
-        "--status", action="store_true", help="Check authentication status"
-    )
-    parser.add_argument(
-        "--list-tools", action="store_true", help="List all available MCP tools"
-    )
+    parser.add_argument("--status", action="store_true", help="Check authentication status")
+    parser.add_argument("--list-tools", action="store_true", help="List all available MCP tools")
     parser.add_argument(
         "--tool-info", type=str, metavar="TOOL", help="Show details for a specific tool"
     )
@@ -760,9 +746,7 @@ def main():
         default="stdio",
         help="MCP transport",
     )
-    parser.add_argument(
-        "--port", type=int, default=8000, help="Port for HTTP transport"
-    )
+    parser.add_argument("--port", type=int, default=8000, help="Port for HTTP transport")
     parser.add_argument(
         "--json",
         action="store_true",
@@ -773,9 +757,7 @@ def main():
 
     # AXI §6: Fail loud on unrecognized input
     if unknown:
-        axi_error(
-            f"Unknown flag: '{unknown[0]}'", "Run `reddit-httpx --help` for usage"
-        )
+        axi_error(f"Unknown flag: '{unknown[0]}'", "Run `reddit-lyr --help` for usage")
 
     # Parse --fields into list
     extra_fields = []
@@ -825,9 +807,7 @@ def main():
 
         path = Path(args.cookies_file)
         if not path.exists():
-            axi_error(
-                f"File not found: {args.cookies_file}", "Check the path and try again."
-            )
+            axi_error(f"File not found: {args.cookies_file}", "Check the path and try again.")
         try:
             data = json.loads(path.read_text())
             cookies = data.get("cookies", data) if isinstance(data, dict) else data
@@ -838,12 +818,10 @@ def main():
                 )
             save_cookies(cookies)
             print(
-                _toon_object(
-                    {
-                        "status": "success",
-                        "message": f"Imported {len(cookies)} cookies from {path.name}.",
-                    }
-                )
+                _toon_object({
+                    "status": "success",
+                    "message": f"Imported {len(cookies)} cookies from {path.name}.",
+                })
             )
         except json.JSONDecodeError:
             axi_error("Invalid JSON in cookies file.", "File must contain valid JSON.")
@@ -853,11 +831,7 @@ def main():
         from reddit_mcp_server.session_state import clear_cookies
 
         clear_cookies()
-        print(
-            _toon_object(
-                {"status": "success", "message": "Logged out. Cookies cleared."}
-            )
-        )
+        print(_toon_object({"status": "success", "message": "Logged out. Cookies cleared."}))
         return
 
     if args.status:
@@ -874,13 +848,13 @@ def main():
             hints.append("Session ready — reads and writes supported")
         elif mode == "reads_only":
             hints.append("Writes blocked: reddit_session cookie missing")
-            hints.append("Run `reddit-httpx --login` to restore full access")
+            hints.append("Run `reddit-lyr --login` to restore full access")
         elif mode == "degraded":
             hints.append("Writes may fail: token_v2 cookie missing")
-            hints.append("Run `reddit-httpx --login` to restore full access")
+            hints.append("Run `reddit-lyr --login` to restore full access")
         else:
             hints.append("Not authenticated")
-            hints.append("Run `reddit-httpx --login` or `reddit-httpx --cookies-file <path>`")
+            hints.append("Run `reddit-lyr --login` or `reddit-lyr --cookies-file <path>`")
         if hints:
             print(f"help[{len(hints)}]:")
             for h in hints:
