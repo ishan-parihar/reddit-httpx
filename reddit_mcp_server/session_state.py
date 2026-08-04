@@ -13,11 +13,26 @@ def get_profile_dir() -> Path:
     return d
 
 
+def _has_usable_cookies(path: Path) -> bool:
+    try:
+        data = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return False
+    if not isinstance(data, dict):
+        return False
+    cookies = data.get("cookies", data)
+    return isinstance(cookies, dict) and any(
+        isinstance(v, str) and v for v in cookies.values()
+    )
+
+
 def _migrate_if_needed() -> None:
-    """One-time migration: copy cookies from ~/.reddit-httpx/ to ~/.reddit-lyr/ if needed."""
+    """Copy cookies from ~/.reddit-httpx/ to ~/.reddit-lyr/ if the active file
+    is missing or holds no usable cookies (e.g. a corrupt/empty file that would
+    otherwise strand valid legacy cookies)."""
     old = Path(OLD_PROFILE_DIR).expanduser() / COOKIES_FILE
     new = get_profile_dir() / COOKIES_FILE
-    if old.exists() and not new.exists():
+    if old.exists() and (not new.exists() or not _has_usable_cookies(new)):
         new.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(old, new)
 
