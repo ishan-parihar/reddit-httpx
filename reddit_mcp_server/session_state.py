@@ -13,6 +13,14 @@ def get_profile_dir() -> Path:
     return d
 
 
+def _unwrap(data: dict) -> dict:
+    """Unwrap nested `cookies` keys (the daemon round-trips an already-wrapped
+    format, producing {"cookies": {"cookies": {...}}})."""
+    while isinstance(data, dict) and "cookies" in data and set(data) == {"cookies"}:
+        data = data["cookies"]
+    return data
+
+
 def _has_usable_cookies(path: Path) -> bool:
     try:
         data = json.loads(path.read_text())
@@ -20,7 +28,7 @@ def _has_usable_cookies(path: Path) -> bool:
         return False
     if not isinstance(data, dict):
         return False
-    cookies = data.get("cookies", data)
+    cookies = _unwrap(data)
     return isinstance(cookies, dict) and any(
         isinstance(v, str) and v for v in cookies.values()
     )
@@ -47,7 +55,9 @@ def load_cookies() -> dict[str, str]:
     if not path.exists():
         return {}
     data = json.loads(path.read_text())
-    return data.get("cookies", data) if isinstance(data, dict) else {}
+    if not isinstance(data, dict):
+        return {}
+    return _unwrap(data)
 
 
 def save_cookies(cookies: dict[str, str]) -> None:
