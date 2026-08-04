@@ -61,6 +61,10 @@ def load_cookies() -> dict[str, str]:
 
 
 def save_cookies(cookies: dict[str, str]) -> None:
+    # Normalize: if callers pass an already-wrapped dict (e.g. the result of
+    # load_cookies or obscura's storage.load), unwrap first so repeated
+    # write-back round-trips never nest cookies keys deeper.
+    cookies = _unwrap(cookies)
     path = get_cookies_path()
     path.write_text(json.dumps({"cookies": cookies}, indent=2))
 
