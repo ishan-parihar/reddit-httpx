@@ -109,6 +109,20 @@ reddit-lyr mcp
 
 ---
 
+## Limitations
+
+| Capability | Status |
+|---|---|
+| Submit text/link/comment posts, delete own posts, reply | 🟢 working (verified live) |
+| Vote / mod tools / search / posts / comments reads | 🟢 working |
+| **`send_message` (private message)** | 🔴 **hard 401 on `/api/compose`** — Reddit `api/compose` rejects every auth scheme tried (modhash param, `X-Modhash` header, Bearer `token_v2`) even though submit/read/delete work with the same session. Endpoint-level auth gating, not a tool bug. |
+
+Notes:
+
+- Cookie resolution order: obscura daemon (port 9999) → local file → browser re-extraction. A dead daemon adds latency before the file fallback is reached. The on-disk cookie file must stay single-wrap `{"cookies": {flat}}`; nested wraps read as empty and block authed tools.
+
+---
+
 ## Related CLI Tools
 
 This project is part of a family of agent-friendly CLI tools for social platforms:
