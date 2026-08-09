@@ -263,6 +263,23 @@ verify() {
     fi
 }
 
+# ── Install AI agent skills ────────────────────────────────────────────────
+install_skills() {
+    step "Installing AI agent skills..."
+    mkdir -p ~/.agents/skills
+    
+    # Try to find skills in repository
+    if [ -d ".agents/skills" ]; then
+        cp -r .agents/skills/* ~/.agents/skills/
+        info "AI agent skills installed to ~/.agents/skills/"
+    elif [ -d "$HOME/.local/share/reddit-lyr/.agents/skills" ]; then
+        cp -r "$HOME/.local/share/reddit-lyr/.agents/skills"/* ~/.agents/skills/
+        info "AI agent skills installed to ~/.agents/skills/"
+    else
+        warn "No AI agent skills found. Manual installation may be required."
+    fi
+}
+
 # ── Main ──────────────────────────────────────────────────────────────────
 main() {
     info "Installing reddit-lyr..."
@@ -281,6 +298,7 @@ main() {
         if install_with_uv; then
             echo ""
             verify
+            install_skills
             exit 0
         fi
         warn "uv installation failed, trying pipx..."
@@ -289,9 +307,13 @@ main() {
     # Try pipx
     if install_pipx "$py"; then
         info "pipx install complete"
+        verify
+        install_skills
     # Fallback to pip
     elif install_pip "$py"; then
         info "pip install complete"
+        verify
+        install_skills
     else
         err "Install failed. Try manually:"
         err "  git clone $REPO && cd reddit-lyr && pip install -e ."

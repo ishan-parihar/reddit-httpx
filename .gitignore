@@ -11,3 +11,6 @@ build/
 .reddit-mcp/
 .cortexkit/
 .hive/
+
+# Old skill directory
+.devin/
