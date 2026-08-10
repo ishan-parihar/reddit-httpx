@@ -1,13 +1,23 @@
-# Reddit-Httpx
+<p align="center">
+  <img src="https://img.shields.io/badge/python-3.11+-2b6cb0?style=flat&logo=python&logoColor=white" alt="Python 3.11+">
+  <img src="https://img.shields.io/badge/license-MIT-059669?style=flat" alt="MIT">
+  <img src="https://img.shields.io/badge/mcp-1.0-c026d3?style=flat&logo=modelcontextprotocol&logoColor=white" alt="MCP 1.0">
+  <img src="https://img.shields.io/badge/endpoints-50%2B-2563eb?style=flat" alt="50+ endpoints">
+</p>
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue?logo=python)
-![License](https://img.shields.io/badge/License-MIT-green)
-![MCP](https://img.shields.io/badge/MCP-1.0-orange?logo=modelcontextprotocol)
-![Endpoints](https://img.shields.io/badge/Endpoints-50+-blue)
-![Async](https://img.shields.io/badge/Async-httpx-green)
+<h1 align="center">reddit-lyr</h1>
 
+<p align="center">
+  <strong>An async Reddit API wrapper and MCP server for AI agents</strong> — 50+ typed endpoints, zero PRAW
+  dependency, and a 32-tool agent interface for browsing, posting, commenting, voting, moderating, and searching
+  through the same session your browser has.
+</p>
 
-**Complete Reddit API wrapper** — 50+ endpoints, async httpx, MCP server, zero PRAW dependency.
+<p align="center">
+  <code>pipx install reddit-lyr</code>
+</p>
+
+---
 
 ![Reddit-Httpx MCP](https://github.com/ishan-parihar/reddit-lyr/raw/main/assets/readme/reddit-lyr-mcp.png)
 
