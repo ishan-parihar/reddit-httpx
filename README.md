@@ -39,6 +39,8 @@
 
 ```bash
 # Install
+
+<!-- T2I HERO SPEC — Subject: a Reddit data engine — subreddit nodes (orange alien motif) feeding posts, comments, and votes through an HTTPX pipeline into structured JSON for agents; per-subreddit concurrency limiter as a valve. Composition: alien nodes → funnel → JSON output. Palette: reddit orange #ff4500 → deep slate → off-white cards. Style: dark flat vector, upvote-arrow motif, no text. 16:9. -->
 pipx install reddit-lyr
 
 # Auth (interactive)
