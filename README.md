@@ -1,5 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.11+-2b6cb0?style=flat&logo=python&logoColor=white" alt="Python 3.11+">
+[![CI](https://github.com/ishan-parihar/reddit-lyr/actions/workflows/ci.yml/badge.svg)](https://github.com/ishan-parihar/reddit-lyr/actions/workflows/ci.yml)
   <img src="https://img.shields.io/badge/license-MIT-059669?style=flat" alt="MIT">
   <img src="https://img.shields.io/badge/mcp-1.0-c026d3?style=flat&logo=modelcontextprotocol&logoColor=white" alt="MCP 1.0">
   <img src="https://img.shields.io/badge/endpoints-50%2B-2563eb?style=flat" alt="50+ endpoints">
