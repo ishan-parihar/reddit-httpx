@@ -1,5 +1,6 @@
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.11+-2b6cb0?style=flat&logo=python&logoColor=white" alt="Python 3.11+">
+![LOC](https://img.shields.io/badge/LOC-4.1K-informational?style=flat-square)
 [![CI](https://github.com/ishan-parihar/reddit-lyr/actions/workflows/ci.yml/badge.svg)](https://github.com/ishan-parihar/reddit-lyr/actions/workflows/ci.yml)
   <img src="https://img.shields.io/badge/license-MIT-059669?style=flat" alt="MIT">
   <img src="https://img.shields.io/badge/mcp-1.0-c026d3?style=flat&logo=modelcontextprotocol&logoColor=white" alt="MCP 1.0">
@@ -154,3 +155,14 @@ This project is part of a family of agent-friendly CLI tools for social platform
 ## License
 
 MIT — see [LICENSE](LICENSE).
+
+---
+
+## ☕ Support & Sponsorship
+
+If you find this project useful, consider supporting ongoing development:
+
+[![Sponsor](https://img.shields.io/badge/Sponsor-GitHub%20Sponsors-ea4aaa?style=flat-square&logo=github)](https://github.com/sponsors/ishan-parihar)
+[![Donate](https://img.shields.io/badge/Donate-Razorpay-3395FF?style=flat-square)](https://rzp.io/rzp/ishan-parihar)
+
+Your support funds new features, releases, and infrastructure for the whole ecosystem.
