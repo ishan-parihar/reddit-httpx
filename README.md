@@ -1,6 +1,9 @@
+<!-- T2I HERO SPEC — Subject: a Reddit data engine — subreddit nodes (orange alien motif) feeding posts, comments, and votes through an HTTPX pipeline into structured JSON for agents; per-subreddit concurrency limiter as a valve. Composition: alien nodes → funnel → JSON output. Palette: reddit orange #ff4500 → deep slate → off-white cards. Style: dark flat vector, upvote-arrow motif, no text. 16:9. -->
+
 <p align="center">
   <img src="https://img.shields.io/badge/python-3.11+-2b6cb0?style=flat&logo=python&logoColor=white" alt="Python 3.11+">
 <img src="https://img.shields.io/badge/LOC-4.4K-informational?style=flat-square" alt="LOC">
+<img src="https://img.shields.io/badge/Status-Active-brightgreen" alt="Status">
 <a href="https://github.com/ishan-parihar/reddit-lyr/actions/workflows/ci.yml"><img src="https://github.com/ishan-parihar/reddit-lyr/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <img src="https://img.shields.io/badge/license-MIT-059669?style=flat" alt="MIT">
   <img src="https://img.shields.io/badge/mcp-1.0-c026d3?style=flat&logo=modelcontextprotocol&logoColor=white" alt="MCP 1.0">
@@ -42,7 +45,7 @@
 ```bash
 # Install
 
-<!-- T2I HERO SPEC — Subject: a Reddit data engine — subreddit nodes (orange alien motif) feeding posts, comments, and votes through an HTTPX pipeline into structured JSON for agents; per-subreddit concurrency limiter as a valve. Composition: alien nodes → funnel → JSON output. Palette: reddit orange #ff4500 → deep slate → off-white cards. Style: dark flat vector, upvote-arrow motif, no text. 16:9. -->
+
 pipx install reddit-lyr
 
 # Auth (interactive)
